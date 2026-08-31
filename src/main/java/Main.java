@@ -1,9 +1,7 @@
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Scanner;
-
 public class Main {
 
     public static void main(String[] args) throws Exception {
@@ -20,7 +18,7 @@ public class Main {
             if (command.equals("exit")) {
 
                 break;
-
+            
             }
 
             // echo builtin
@@ -38,33 +36,39 @@ public class Main {
                 String argument = parts[1];
 
                 // Check builtins
-                if (argument.equals("exit") ||
-                    argument.equals("echo") ||
-                    argument.equals("type")) {
-
+                if (argument.equals("exit")|| argument.equals("echo") || argument.equals("type")) {
                     System.out.println(argument + " is a shell builtin");
-
-                } else {
-
+                } 
+                else {
+                    // Get PATH
                     String path = System.getenv("PATH");
+
+                    // Split PATH into directories
                     String[] directories = path.split(":");
 
                     boolean found = false;
 
+                    // Search every directory
                     for (int i = 0; i < directories.length; i++) {
 
-                        Path fullPath = Paths.get(directories[i], argument);
+                        String directory = directories[i];
 
-                        if (Files.exists(fullPath) &&
-                            Files.isExecutable(fullPath)) {
+                        // Create full path
+                        Path fullPath = Paths.get(directory, argument);
+
+                        // Check if it exists AND is executable
+                        if (Files.exists(fullPath) && Files.isExecutable(fullPath)) {
 
                             System.out.println(argument + " is " + fullPath);
 
                             found = true;
+
+                            // Stop searching
                             break;
                         }
                     }
 
+                    // If not found in any directory
                     if (!found) {
 
                         System.out.println(argument + ": not found");
@@ -73,63 +77,11 @@ public class Main {
                 }
 
             }
-
-            // External command
+            // Unknown command
             else {
 
-                // Split command into program + arguments
-                String[] parts = command.split(" ");
+                System.out.println(command + ": command not found");
 
-                String programName = parts[0];
-
-                String path = System.getenv("PATH");
-
-                String[] directories = path.split(":");
-
-                boolean found = false;
-
-                for (String directory : directories) {
-
-                    Path fullPath = Paths.get(directory, programName);
-
-                    if (Files.exists(fullPath) &&
-                        Files.isExecutable(fullPath)) {
-
-                        // Create command array
-                        String[] processCommand = new String[parts.length];
-
-                        // First item = full path to program
-                        processCommand[0] = fullPath.toString();
-
-                        // Remaining items = arguments
-                        for (int i = 1; i < parts.length; i++) {
-
-                            processCommand[i] = parts[i];
-
-                        }
-
-                        ProcessBuilder processBuilder =
-                                new ProcessBuilder(processCommand);
-
-                        // Let external program use same terminal
-                        processBuilder.inheritIO();
-
-                        Process process = processBuilder.start();
-
-                        // Wait for program to finish
-                        process.waitFor();
-
-                        found = true;
-
-                        break;
-                    }
-                }
-
-                if (!found) {
-
-                    System.out.println(command + ": command not found");
-
-                }
             }
         }
     }
