@@ -6,7 +6,7 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         while (true) {
             // Display the prompt
-            System.out.print("$");
+            System.out.print("$ ");
             // Read the command
             String command = scanner.nextLine();
             // Print the error message
