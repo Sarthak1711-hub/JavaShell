@@ -14,13 +14,18 @@ public class Main {
 
                 System.out.println(command + ": command not found");
             }
-            if(command.equals("type")){
-                if(command.equals("exit") || command.startsWith("echo")){
-                    System.out.println(command + " is a shell builtin");
+
+            String[] parts = command.split(" ");
+            
+            if (parts[0].equals("type")) {
+                String argument = parts[1];
+
+                if (argument.equals("exit") || argument.equals("echo")) {
+                    System.out.println(argument + " is a shell builtin");
+                } else {
+                    System.out.println(argument + ": not found");
                 }
-                else{
-                    System.out.println(command + ": not found");
-                }
+
             }
         }
     }
