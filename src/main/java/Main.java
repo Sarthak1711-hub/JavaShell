@@ -4,9 +4,14 @@ public class Main {
     public static void main(String[] args) throws Exception {
         System.out.print("$ ");
         Scanner scanner = new Scanner(System.in);
-        String command = scanner.nextLine();
-        System.out.println(command + ": command not found");
-
+        while (true) {
+            // Display the prompt
+            System.out.println("$");
+            // Read the command
+            String command = scanner.nextLine();
+            // Print the error message
+            System.out.println(command + ": command not found");
+        }
 
     }
 }
