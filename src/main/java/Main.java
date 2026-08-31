@@ -11,8 +11,9 @@ public class Main {
             }
             if (command.startsWith("echo")) {
                 System.out.println(command.substring(5));
+                System.out.print("$ ");
             }
-            System.out.print("$ ");
+            
             System.out.println(command + ": command not found");
         }
     }
