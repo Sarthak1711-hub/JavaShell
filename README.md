@@ -1,34 +1,50 @@
-[![progress-banner](https://backend.codecrafters.io/progress/shell/71e7e05a-6103-476a-bcde-1a161eb4c63a)](https://app.codecrafters.io/users/Sarthak1711-hub?r=2qF)
+# JavaShell 🐚
 
-This is a starting point for Java solutions to the
-["Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
+A Unix-like shell built from scratch in Java.
 
-In this challenge, you'll build your own POSIX compliant shell that's capable of
-interpreting shell commands, running external programs and builtin commands like
-cd, pwd, echo and more. Along the way, you'll learn about shell command parsing,
-REPLs, builtin commands, and more.
+JavaShell is a command-line shell implementation that can interpret user commands, execute built-in commands, locate executable programs using the `PATH` environment variable, and run external programs.
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+This project is being built as part of the **"Build Your Own Shell"** challenge by Codecrafters.
 
-# Passing the first stage
+## 🚀 Features
 
-The entry point for your `shell` implementation is in `src/main/java/Main.java`.
-Study and uncomment the relevant code, then run the command below to execute the
-tests on our servers:
+Currently implemented:
 
-```sh
-codecrafters submit
-```
+- Interactive REPL
+- Shell prompt
+- `exit` builtin
+- `echo` builtin
+- `type` builtin
+- Executable discovery using the `PATH` environment variable
+- Detection of executable files
+- External program execution using Java's `ProcessBuilder`
 
-Time to move on to the next stage!
+## 🧠 Concepts Explored
 
-# Stage 2 & beyond
+This project explores several important operating system and Java concepts:
 
-Note: This section is for stages 2 and beyond.
+- REPL (Read-Eval-Print Loop)
+- Command parsing
+- Built-in commands
+- Environment variables
+- The `PATH` environment variable
+- File systems and directories
+- Executable files and permissions
+- Java NIO (`Path`, `Paths`, `Files`)
+- Process creation
+- External program execution using `ProcessBuilder`
 
-1. Ensure you have `mvn` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main/java/Main.java`.
-1. Run `codecrafters submit` to submit your solution to CodeCrafters. Test
-   output will be streamed to your terminal.
+## 🛠️ Technologies Used
+
+- Java
+- Java NIO
+- Maven
+- Git
+- Codecrafters CLI
+
+## ▶️ Running the Project
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Sarthak1711-hub/JavaShell.git
