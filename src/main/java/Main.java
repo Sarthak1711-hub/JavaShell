@@ -2,7 +2,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
-
 public class Main {
 
     public static void main(String[] args) throws Exception {
@@ -19,7 +18,7 @@ public class Main {
             if (command.equals("exit")) {
 
                 break;
-
+            
             }
 
             // echo builtin
@@ -37,14 +36,10 @@ public class Main {
                 String argument = parts[1];
 
                 // Check builtins
-                if (argument.equals("exit")
-                        || argument.equals("echo")
-                        || argument.equals("type")) {
-
+                if (argument.equals("exit")|| argument.equals("echo") || argument.equals("type")) {
                     System.out.println(argument + " is a shell builtin");
-
-                } else {
-
+                } 
+                else {
                     // Get PATH
                     String path = System.getenv("PATH");
 
@@ -62,12 +57,9 @@ public class Main {
                         Path fullPath = Paths.get(directory, argument);
 
                         // Check if it exists AND is executable
-                        if (Files.exists(fullPath)
-                                && Files.isExecutable(fullPath)) {
+                        if (Files.exists(fullPath) && Files.isExecutable(fullPath)) {
 
-                            System.out.println(
-                                    argument + " is " + fullPath
-                            );
+                            System.out.println(argument + " is " + fullPath);
 
                             found = true;
 
@@ -85,7 +77,6 @@ public class Main {
                 }
 
             }
-
             // Unknown command
             else {
 
