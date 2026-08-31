@@ -20,7 +20,7 @@ public class Main {
             if (parts[0].equals("type")) {
                 String argument = parts[1];
 
-                if (argument.equals("exit") || argument.equals("echo")) {
+                if (argument.equals("exit") || argument.startsWith("echo")) {
                     System.out.println(argument + " is a shell builtin");
                 } else {
                     System.out.println(argument + ": not found");
