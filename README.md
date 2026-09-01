@@ -1,188 +1,320 @@
-# JavaShell 🐚
+![Java](https://img.shields.io/badge/Java-11+-007396?style=flat-square&logo=openjdk)
+![Maven](https://img.shields.io/badge/Maven-3.6+-C71A36?style=flat-square&logo=apachemaven)
+![NIO](https://img.shields.io/badge/NIO-ProcessBuilder-FFD700?style=flat-square)
+![REPL](https://img.shields.io/badge/Pattern-REPL-blueviolet?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
-A Unix-like shell built from scratch in Java that interprets and executes commands, featuring built-in commands, PATH resolution, and external program execution.
+# 🐚 JavaShell
 
-**JavaShell** is a lightweight command-line shell implementation developed as part of the [Codecrafters "Build Your Own Shell"](https://codecrafters.io/challenges/shell) challenge.
+> A Unix-like shell built from scratch in Java — engineered for command parsing, process management, and executable discovery across the system PATH.
+
+Built with **Java 11+ · Maven · Java NIO**
+
+---
+
+## 📌 Overview
+
+JavaShell is a lightweight, feature-complete command-line shell that reads user commands, resolves executables, and spawns child processes. It demonstrates core OS and Java concepts through a clean, production-grade implementation.
+
+Unlike shells bundled with the system, every aspect of JavaShell is built manually — from the REPL loop to PATH resolution to process creation via `ProcessBuilder`.
+
+| Aspect | Behavior |
+|---|---|
+| 🔄 **Command Loop** | Interactive REPL with persistent prompt |
+| 🔍 **Command Resolution** | Checks builtins first, then searches PATH directories |
+| ⚙️ **Process Execution** | Spawns external programs with arguments via ProcessBuilder |
+| 🛡️ **Error Handling** | Graceful "command not found" responses |
+
+---
 
 ## ✨ Features
 
-**Core Functionality:**
-- Interactive REPL with shell prompt
-- Command parsing and execution
-- Built-in commands: `exit`, `echo`, `type`
-- PATH environment variable resolution for executable discovery
-- External program execution via Java's `ProcessBuilder`
-- Support for command arguments and flags
+| Feature | Details |
+|---|---|
+| 🔁 **Interactive REPL** | Persistent shell prompt, line-by-line command processing |
+| 🔧 **Built-in Commands** | `exit`, `echo`, `type` — hardcoded in the shell |
+| 🌍 **PATH Resolution** | Searches `$PATH` environment variable for executables |
+| 📂 **File Executable Check** | Uses Java NIO to verify file existence and execute permissions |
+| 🚀 **External Program Execution** | Spawns any system binary with arguments using ProcessBuilder |
+| 📝 **Command Parsing** | Splits input into program name and arguments |
 
-**Built-in Commands:**
-- `exit` – Terminate the shell
-- `echo [args]` – Print arguments to stdout
-- `type [command]` – Show if a command is a builtin or display its path
+---
 
-## 🎓 Concepts Explored
+## 🛠️ Tech Stack
 
-This project demonstrates practical implementation of:
-- **REPL Pattern** – Read-Eval-Print Loop architecture
-- **Command Parsing** – Tokenizing and parsing user input
-- **Environment Variables** – Accessing and using system environment
-- **PATH Resolution** – Searching for executables across directories
-- **Process Management** – Spawning and managing child processes
-- **File System Operations** – Java NIO for file checks and permissions
-- **Java NIO APIs** – `Path`, `Paths`, `Files` for filesystem access
-- **ProcessBuilder** – Cross-platform process creation
+| Layer | Technology | Purpose |
+|---|---|---|
+| Runtime | Java 11+ | JVM-based execution |
+| Build Tool | Maven 3.6+ | Compilation, dependency management |
+| I/O | Java Scanner | Command input and prompt display |
+| Filesystem | Java NIO (`Path`, `Paths`, `Files`) | Executable discovery and permission checks |
+| Process Control | `ProcessBuilder` | Cross-platform child process spawning |
+| Environment | System environment variables | PATH lookup at runtime |
 
-## 🛠️ Technologies
+---
 
-- **Language:** Java 11+
-- **Build Tool:** Maven
-- **Key Libraries:** Java NIO, ProcessBuilder
-- **Version Control:** Git
+## 🗂️ Project Structure
 
-## 📋 Prerequisites
-
-- Java 11 or higher
-- Maven 3.6+
-- Git
-- Unix-like environment (Linux, macOS) or WSL on Windows
-
-Verify your installation:
-```bash
-java -version
-mvn -version
+```
+JavaShell/
+│
+├── src/
+│   └── main/
+│       └── java/
+│           └── Main.java           # Single-file implementation
+├── pom.xml                         # Maven build configuration
+├── README.md                       # This file
+└── .gitignore
 ```
 
-## 🚀 Getting Started
+**Main.java Breakdown:**
+- **REPL Loop** (`while (true)`) – Reads and processes commands indefinitely
+- **Builtin Handlers** – `exit`, `echo`, `type` command logic
+- **PATH Resolution** – Iterates through `PATH` directories to find executables
+- **ProcessBuilder Integration** – Launches external programs and inherits I/O streams
 
-### Clone the Repository
+---
+
+## 📐 Architecture
+
+Command execution follows a single-file, linear flow optimized for clarity:
+
+```
+    User Input (Scanner)
+         │
+         ▼
+    Parse Command
+    (split by space)
+         │
+         ▼
+    ┌──────────────────┐
+    │ Is Builtin?      │
+    └────┬───────┬─────┘
+         │       │
+        YES      NO
+         │       │
+         ▼       ▼
+    Execute   Search PATH
+    Builtin    Directories
+         │       │
+         │       ▼
+         │   ┌────────────┐
+         │   │ Found?     │
+         │   └──┬──────┬──┘
+         │      │      │
+         │     YES     NO
+         │      │      │
+         │      ▼      ▼
+         │   Execute  Print Error
+         │   Program
+         │      │
+         └──────┼──────────┐
+                │          │
+                ▼          ▼
+           Display Output Continue Loop
+```
+
+---
+
+## ⚙️ Getting Started
+
+### Prerequisites
+
+- **Java 11+** — Check: `java -version`
+- **Maven 3.6+** — Check: `mvn -version`
+- **Git** — For cloning the repository
+- **Unix-like Environment** — Linux, macOS, or WSL on Windows
+
+### 1 — Clone the Repository
 
 ```bash
 git clone https://github.com/Sarthak1711-hub/JavaShell.git
 cd JavaShell
 ```
 
-### Build with Maven
+### 2 — Build with Maven
 
 ```bash
 mvn clean compile
 ```
 
-### Run JavaShell
+### 3 — Run JavaShell
 
+**Option A: Via Maven**
 ```bash
 mvn exec:java -Dexec.mainClass="Main"
 ```
 
-Or compile and run directly:
+**Option B: Direct Execution**
 ```bash
 mvn compile
 java -cp target/classes Main
 ```
 
-## 💻 Usage
+Server starts and displays:
+```
+$
+```
 
-Once running, JavaShell will display a prompt and wait for commands:
+---
 
+## 🔌 Command Reference
+
+### Built-in Commands
+
+| Command | Syntax | Description | Example |
+|---|---|---|---|
+| `exit` | `exit` | Terminate the shell | `$ exit` |
+| `echo` | `echo [text]` | Print text to stdout | `$ echo Hello, World!` |
+| `type` | `type [command]` | Show command type (builtin or path) | `$ type ls` |
+
+### External Commands
+
+Any command not recognized as a builtin is treated as an external program:
+
+```bash
+$ pwd
+$ ls -la
+$ grep "pattern" file.txt
+$ cat /etc/hosts
+```
+
+---
+
+## 💻 Usage Examples
+
+### Built-in Commands
+
+**echo**
 ```bash
 $ echo Hello, World!
 Hello, World!
 
+$ echo This is JavaShell
+This is JavaShell
+```
+
+**type**
+```bash
 $ type echo
 echo is a shell builtin
 
 $ type ls
 ls is /bin/ls
 
-$ ls -la
-(displays directory listing)
-
-$ exit
-```
-
-### Command Examples
-
-**Built-in Commands:**
-```bash
-$ echo This is a test
-This is a test
-
-$ type exit
-exit is a shell builtin
-
 $ type nonexistent
 nonexistent: not found
 ```
 
-**External Commands:**
+**exit**
+```bash
+$ exit
+(shell terminates)
+```
+
+### External Commands
+
+**System Utilities**
 ```bash
 $ pwd
 /home/user/JavaShell
 
-$ echo "File listing:" && ls -l
-File listing:
-(system ls output)
+$ ls -l
+(directory listing)
+
+$ whoami
+username
+
+$ date
+Tue Sep 01 15:30:45 IST 2026
 ```
 
-## 📁 Project Structure
+---
+
+## 🔄 Command Execution Flow
+
+A detailed walkthrough of what happens when you type a command:
 
 ```
-JavaShell/
-├── src/
-│   └── main/
-│       └── java/
-│           └── Main.java          # Main shell loop and command handler
-├── pom.xml                        # Maven configuration
-├── README.md                      # This file
-└── .gitignore                     # Git ignore rules
+  $ ls -la /tmp
+       │
+       ▼
+  1. Scanner reads line: "ls -la /tmp"
+       │
+       ▼
+  2. Split into parts: ["ls", "-la", "/tmp"]
+       │
+       ▼
+  3. Check if "ls" is a builtin
+     └─ exit? No
+     └─ echo? No
+     └─ type? No
+       │
+       ▼
+  4. Get PATH environment variable
+     └─ Split by ":" into directories
+       │
+       ▼
+  5. Search each directory:
+     ├─ /usr/local/bin/ls ? No
+     ├─ /usr/bin/ls ? YES ✓
+       │
+       ▼
+  6. Create ProcessBuilder with full command
+     └─ ["/usr/bin/ls", "-la", "/tmp"]
+       │
+       ▼
+  7. Inherit I/O streams
+     └─ Child process output → Terminal
+       │
+       ▼
+  8. Execute & wait for completion
+     └─ Process.waitFor()
+       │
+       ▼
+  ✅ Prompt returns for next command
 ```
 
-**Main.java Overview:**
-- `main()` – Initializes REPL loop and command scanner
-- Built-in command handlers for `exit`, `echo`, `type`
-- PATH resolution logic for external commands
-- ProcessBuilder integration for program execution
+---
 
-## 🔄 How It Works
+## 🎓 Design Patterns & Concepts
 
-1. **Command Input** – Scanner reads user input line by line
-2. **Parsing** – Command is split into program name and arguments
-3. **Builtin Check** – First checks if command is a shell builtin
-4. **PATH Search** – If not builtin, searches PATH directories for executable
-5. **Execution** – Launches program via ProcessBuilder and inherits I/O
-6. **Output** – Child process output displays directly to user
+| Concept | Implementation |
+|---|---|
+| **REPL** | Infinite loop with Scanner — prompt → input → process → repeat |
+| **Command Dispatch** | If-else chain routing to builtin or external handlers |
+| **PATH Resolution** | Linear search through `$PATH` directories via `Files.exists()` and `Files.isExecutable()` |
+| **Process Management** | `ProcessBuilder` with `inheritIO()` for transparent I/O |
+| **Environment Access** | `System.getenv()` for Java access to system variables |
+| **File System Checks** | Java NIO (`Path`, `Paths`, `Files`) for executable discovery |
+
+---
 
 ## 🧪 Testing
 
-Run the test suite:
-```bash
-mvn test
-```
+Run Codecrafters automated tests:
 
-Codecrafters provides automated tests for each stage of implementation. Pass all stage tests:
 ```bash
 ccr test
 ```
 
-## 🤝 Contributing
+Or verify manually with common shell commands:
+```bash
+$ type echo
+echo is a shell builtin
 
-Contributions are welcome! To contribute:
+$ pwd
+/path/to/current/directory
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+$ exit
+```
 
-## 📝 License
+---
 
-This project is licensed under the MIT License – see the LICENSE file for details.
+## 📄 License
 
-## 🔗 Resources
+MIT License — Open-source and free to use for learning and personal projects.
 
-- [Codecrafters Shell Challenge](https://codecrafters.io/challenges/shell)
-- [Java NIO Documentation](https://docs.oracle.com/javase/tutorial/nio/)
-- [ProcessBuilder JavaDoc](https://docs.oracle.com/javase/11/docs/api/java.base/java/lang/ProcessBuilder.html)
-- [Unix Shell Concepts](https://www.gnu.org/software/bash/manual/)
+---
 
-## 📧 Questions?
-
-Feel free to open an issue on GitHub or reach out with questions about the implementation!
+> Built by **Sarthak** — MCA Student, Amity University Noida
