@@ -21,14 +21,12 @@ public class Main {
                 break;
 
             }
-
             // echo builtin
             else if (command.startsWith("echo ")) {
 
                 System.out.println(command.substring(5));
 
             }
-
             // type builtin
             else if (command.startsWith("type ")) {
 
@@ -61,12 +59,6 @@ public class Main {
 
                             System.out.println(argument + " is " + fullPath);
 
-                            ProcessBuilder pb = new ProcessBuilder(argument);
-
-                            Process process = pb.start();
-
-                            process.waitFor();
-
                             found = true;
 
                             // Stop searching
@@ -86,8 +78,40 @@ public class Main {
             // Unknown command
             else {
 
-                System.out.println(command + ": command not found");
+                String[] parts = command.split(" ");
 
+                String programName = parts[0];
+
+                String path = System.getenv("PATH");
+
+                String[] directories = path.split(":");
+
+                boolean found = false;
+
+                for (int i = 0; i < directories.length; i++) {
+
+                    String directory = directories[i];
+
+                    Path fullPath = Paths.get(directory, programName);
+
+                    if (Files.exists(fullPath) && Files.isExecutable(fullPath)) {
+
+                        ProcessBuilder pb = new ProcessBuilder(parts);
+                        pb.inheritIO();
+                        Process process = pb.start();
+                        process.waitFor();
+
+                        found = true;
+
+                        break;
+                    }
+                }
+
+                if (!found) {
+
+                    System.out.println(programName + ": command not found");
+
+                }
             }
         }
     }
