@@ -292,7 +292,6 @@ A detailed walkthrough of what happens when you type a command:
 
 ## 🧪 Testing
 
-Run Codecrafters automated tests:
 
 ```bash
 ccr test

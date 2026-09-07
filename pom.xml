@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.codecrafters</groupId>
-    <artifactId>codecrafters-shell</artifactId>
+    <groupId>com.sarthak</groupId>
+    <artifactId>java-shell</artifactId>
     <version>1.0</version>
 
    <properties>
@@ -30,7 +30,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <finalName>codecrafters-shell</finalName> <!-- Please do not change this final artifact name-->
+                    <finalName>java-shell</finalName> <!-- Please do not change this final artifact name-->
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
