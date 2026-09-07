@@ -8,7 +8,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
         Scanner scanner = new Scanner(System.in);
-
+        Path currentDirectory = Paths.get(System.getProperty("user.dir"));
         while (true) {
 
             System.out.print("$ ");
@@ -74,7 +74,36 @@ public class Main {
                     }
                 }
 
+            } else if (command.equals("pwd")) {
+
+                // System.out.println(System.getProperty("user.dir"));
+                System.out.println(currentDirectory);
+
+            } else if (command.startsWith("cd ")) {
+
+                String[] parts = command.split(" ");
+
+                Path userPath = Paths.get(parts[1]);
+                Path destination;
+
+                if (parts[1].equals("~")) {
+                    userPath = Paths.get(System.getProperty("user.home"));
+                }
+
+                if (userPath.isAbsolute()) {
+
+                    destination = userPath;
+                } else {
+                    destination = currentDirectory.resolve(userPath).normalize();
+                }
+                if (Files.exists(destination) && Files.isDirectory(destination)) {
+                    currentDirectory = destination;
+                } else {
+                    System.out.println("cd: " + parts[1] + ": No such file or directory");
+                }
+
             }
+
             // Unknown command
             else {
 
