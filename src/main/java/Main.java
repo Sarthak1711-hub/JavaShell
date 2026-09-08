@@ -27,14 +27,11 @@ public class Main {
 
             String commandName = parts.get(0);
 
-            // exit builtin
             if (commandName.equals("exit")) {
 
                 break;
-            }
 
-            // echo builtin
-            else if (commandName.equals("echo")) {
+            } else if (commandName.equals("echo")) {
 
                 for (int i = 1; i < parts.size(); i++) {
 
@@ -46,10 +43,8 @@ public class Main {
                 }
 
                 System.out.println();
-            }
 
-            // type builtin
-            else if (commandName.equals("type")) {
+            } else if (commandName.equals("type")) {
 
                 if (parts.size() < 2) {
                     continue;
@@ -57,7 +52,6 @@ public class Main {
 
                 String argument = parts.get(1);
 
-                // Check builtins
                 if (argument.equals("exit")
                         || argument.equals("echo")
                         || argument.equals("type")
@@ -68,23 +62,18 @@ public class Main {
 
                 } else {
 
-                    // Get PATH
                     String path = System.getenv("PATH");
 
-                    // Split PATH into directories
                     String[] directories = path.split(":");
 
                     boolean found = false;
 
-                    // Search every directory
                     for (int i = 0; i < directories.length; i++) {
 
                         String directory = directories[i];
 
-                        // Create full path
                         Path fullPath = Paths.get(directory, argument);
 
-                        // Check if it exists AND is executable
                         if (Files.exists(fullPath)
                                 && Files.isExecutable(fullPath)) {
 
@@ -96,22 +85,17 @@ public class Main {
                         }
                     }
 
-                    // If not found
                     if (!found) {
 
                         System.out.println(argument + ": not found");
                     }
                 }
-            }
 
-            // pwd builtin
-            else if (commandName.equals("pwd")) {
+            } else if (commandName.equals("pwd")) {
 
                 System.out.println(currentDirectory);
-            }
 
-            // cd builtin
-            else if (commandName.equals("cd")) {
+            } else if (commandName.equals("cd")) {
 
                 if (parts.size() < 2) {
                     continue;
@@ -123,39 +107,35 @@ public class Main {
 
                 Path destination;
 
-                // cd ~
                 if (inputPath.equals("~")) {
 
                     destination = Paths.get(
                             System.getProperty("user.home"));
 
-                }
-
-                // Absolute path
-                else if (userPath.isAbsolute()) {
+                } else if (userPath.isAbsolute()) {
 
                     destination = userPath;
 
+                } else {
+
+                    destination = currentDirectory
+                            .resolve(userPath)
+                            .normalize();
                 }
 
-                // Relative path
-                else {
-
-                    destination = currentDirectory.resolve(userPath).normalize();
-                }
-
-                // Check destination
-                if (Files.exists(destination)&& Files.isDirectory(destination)) {
+                if (Files.exists(destination)
+                        && Files.isDirectory(destination)) {
 
                     currentDirectory = destination;
 
                 } else {
 
-                    System.out.println("cd: " + inputPath + ": No such file or directory");
+                    System.out.println(
+                            "cd: " + inputPath
+                                    + ": No such file or directory");
                 }
-            }
-            // Unknown command
-            else {
+
+            } else {
 
                 String programName = parts.get(0);
 
@@ -165,14 +145,14 @@ public class Main {
 
                 boolean found = false;
 
-                // Search PATH
                 for (int i = 0; i < directories.length; i++) {
 
                     String directory = directories[i];
 
                     Path fullPath = Paths.get(directory, programName);
 
-                    if (Files.exists(fullPath)&& Files.isExecutable(fullPath)) {
+                    if (Files.exists(fullPath)
+                            && Files.isExecutable(fullPath)) {
 
                         ProcessBuilder pb = new ProcessBuilder(parts);
 
@@ -188,7 +168,6 @@ public class Main {
                     }
                 }
 
-                // Command not found
                 if (!found) {
 
                     System.out.println(
@@ -199,9 +178,6 @@ public class Main {
 
         scanner.close();
     }
-    // ==========================================
-    // COMMAND PARSER
-    // ==========================================
 
     static List<String> parseCommand(String command) {
 
@@ -209,29 +185,43 @@ public class Main {
 
         String currentArgument = "";
 
-        boolean insideQuote = false;
+        boolean insideSingleQuote = false;
+        boolean insideDoubleQuote = false;
 
         for (int i = 0; i < command.length(); i++) {
 
             char c = command.charAt(i);
 
-            // Single quote
             if (c == '\'') {
 
-                insideQuote = !insideQuote;
-            }
+                if (insideDoubleQuote) {
 
-            // Space
-            else if (c == ' ') {
-
-                if (insideQuote) {
-
-                    // Space inside quote is part of argument
-                    currentArgument = currentArgument + " ";
+                    currentArgument = currentArgument + c;
 
                 } else {
 
-                    // Space outside quote separates arguments
+                    insideSingleQuote = !insideSingleQuote;
+                }
+
+            } else if (c == '"') {
+
+                if (insideSingleQuote) {
+
+                    currentArgument = currentArgument + c;
+
+                } else {
+
+                    insideDoubleQuote = !insideDoubleQuote;
+                }
+
+            } else if (c == ' ' || c == '\t') {
+
+                if (insideSingleQuote || insideDoubleQuote) {
+
+                    currentArgument = currentArgument + c;
+
+                } else {
+
                     if (!currentArgument.isEmpty()) {
 
                         arguments.add(currentArgument);
@@ -239,16 +229,13 @@ public class Main {
                         currentArgument = "";
                     }
                 }
-            }
 
-            // Normal character
-            else {
+            } else {
 
                 currentArgument = currentArgument + c;
             }
         }
 
-        // Add last argument
         if (!currentArgument.isEmpty()) {
 
             arguments.add(currentArgument);
