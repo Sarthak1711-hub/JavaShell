@@ -2,42 +2,72 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
         Scanner scanner = new Scanner(System.in);
+
         Path currentDirectory = Paths.get(System.getProperty("user.dir"));
+
         while (true) {
 
             System.out.print("$ ");
 
             String command = scanner.nextLine();
 
+            List<String> parts = parseCommand(command);
+
+            if (parts.isEmpty()) {
+                continue;
+            }
+
+            String commandName = parts.get(0);
+
             // exit builtin
-            if (command.equals("exit")) {
+            if (commandName.equals("exit")) {
 
                 break;
-
             }
+
             // echo builtin
-            else if (command.startsWith("echo ")) {
+            else if (commandName.equals("echo")) {
 
-                System.out.println(command.substring(5));
+                for (int i = 1; i < parts.size(); i++) {
 
+                    if (i > 1) {
+                        System.out.print(" ");
+                    }
+
+                    System.out.print(parts.get(i));
+                }
+
+                System.out.println();
             }
+
             // type builtin
-            else if (command.startsWith("type ")) {
+            else if (commandName.equals("type")) {
 
-                String[] parts = command.split(" ");
+                if (parts.size() < 2) {
+                    continue;
+                }
 
-                String argument = parts[1];
+                String argument = parts.get(1);
 
                 // Check builtins
-                if (argument.equals("exit") || argument.equals("echo") || argument.equals("type")) {
+                if (argument.equals("exit")
+                        || argument.equals("echo")
+                        || argument.equals("type")
+                        || argument.equals("pwd")
+                        || argument.equals("cd")) {
+
                     System.out.println(argument + " is a shell builtin");
+
                 } else {
+
                     // Get PATH
                     String path = System.getenv("PATH");
 
@@ -55,61 +85,79 @@ public class Main {
                         Path fullPath = Paths.get(directory, argument);
 
                         // Check if it exists AND is executable
-                        if (Files.exists(fullPath) && Files.isExecutable(fullPath)) {
+                        if (Files.exists(fullPath)
+                                && Files.isExecutable(fullPath)) {
 
                             System.out.println(argument + " is " + fullPath);
 
                             found = true;
 
-                            // Stop searching
                             break;
                         }
                     }
 
-                    // If not found in any directory
+                    // If not found
                     if (!found) {
 
                         System.out.println(argument + ": not found");
-
                     }
                 }
-
-            } else if (command.equals("pwd")) {
-
-                // System.out.println(System.getProperty("user.dir"));
-                System.out.println(currentDirectory);
-
-            } else if (command.startsWith("cd ")) {
-
-                String[] parts = command.split(" ");
-
-                Path userPath = Paths.get(parts[1]);
-                Path destination;
-
-                if (parts[1].equals("~")) {
-                    userPath = Paths.get(System.getProperty("user.home"));
-                }
-
-                if (userPath.isAbsolute()) {
-
-                    destination = userPath;
-                } else {
-                    destination = currentDirectory.resolve(userPath).normalize();
-                }
-                if (Files.exists(destination) && Files.isDirectory(destination)) {
-                    currentDirectory = destination;
-                } else {
-                    System.out.println("cd: " + parts[1] + ": No such file or directory");
-                }
-
             }
 
+            // pwd builtin
+            else if (commandName.equals("pwd")) {
+
+                System.out.println(currentDirectory);
+            }
+
+            // cd builtin
+            else if (commandName.equals("cd")) {
+
+                if (parts.size() < 2) {
+                    continue;
+                }
+
+                String inputPath = parts.get(1);
+
+                Path userPath = Paths.get(inputPath);
+
+                Path destination;
+
+                // cd ~
+                if (inputPath.equals("~")) {
+
+                    destination = Paths.get(
+                            System.getProperty("user.home"));
+
+                }
+
+                // Absolute path
+                else if (userPath.isAbsolute()) {
+
+                    destination = userPath;
+
+                }
+
+                // Relative path
+                else {
+
+                    destination = currentDirectory.resolve(userPath).normalize();
+                }
+
+                // Check destination
+                if (Files.exists(destination)&& Files.isDirectory(destination)) {
+
+                    currentDirectory = destination;
+
+                } else {
+
+                    System.out.println("cd: " + inputPath + ": No such file or directory");
+                }
+            }
             // Unknown command
             else {
 
-                String[] parts = command.split(" ");
-
-                String programName = parts[0];
+                String programName = parts.get(0);
 
                 String path = System.getenv("PATH");
 
@@ -117,17 +165,21 @@ public class Main {
 
                 boolean found = false;
 
+                // Search PATH
                 for (int i = 0; i < directories.length; i++) {
 
                     String directory = directories[i];
 
                     Path fullPath = Paths.get(directory, programName);
 
-                    if (Files.exists(fullPath) && Files.isExecutable(fullPath)) {
+                    if (Files.exists(fullPath)&& Files.isExecutable(fullPath)) {
 
                         ProcessBuilder pb = new ProcessBuilder(parts);
+
                         pb.inheritIO();
+
                         Process process = pb.start();
+
                         process.waitFor();
 
                         found = true;
@@ -136,12 +188,72 @@ public class Main {
                     }
                 }
 
+                // Command not found
                 if (!found) {
 
-                    System.out.println(programName + ": command not found");
-
+                    System.out.println(
+                            programName + ": command not found");
                 }
             }
         }
+
+        scanner.close();
+    }
+    // ==========================================
+    // COMMAND PARSER
+    // ==========================================
+
+    static List<String> parseCommand(String command) {
+
+        List<String> arguments = new ArrayList<>();
+
+        String currentArgument = "";
+
+        boolean insideQuote = false;
+
+        for (int i = 0; i < command.length(); i++) {
+
+            char c = command.charAt(i);
+
+            // Single quote
+            if (c == '\'') {
+
+                insideQuote = !insideQuote;
+            }
+
+            // Space
+            else if (c == ' ') {
+
+                if (insideQuote) {
+
+                    // Space inside quote is part of argument
+                    currentArgument = currentArgument + " ";
+
+                } else {
+
+                    // Space outside quote separates arguments
+                    if (!currentArgument.isEmpty()) {
+
+                        arguments.add(currentArgument);
+
+                        currentArgument = "";
+                    }
+                }
+            }
+
+            // Normal character
+            else {
+
+                currentArgument = currentArgument + c;
+            }
+        }
+
+        // Add last argument
+        if (!currentArgument.isEmpty()) {
+
+            arguments.add(currentArgument);
+        }
+
+        return arguments;
     }
 }
