@@ -184,6 +184,7 @@ public class Main {
         List<String> arguments = new ArrayList<>();
 
         String currentArgument = "";
+        String result = "";
 
         boolean insideSingleQuote = false;
         boolean insideDoubleQuote = false;
@@ -192,7 +193,15 @@ public class Main {
 
             char c = command.charAt(i);
 
-            if (c == '\'') {
+            if (c == '\\') {
+                if (i + 1 < command.length()) {
+                    currentArgument = currentArgument + command.charAt(i + 1);
+                    i++;
+                }
+
+            }
+
+            else if (c == '\'') {
 
                 if (insideDoubleQuote) {
 
