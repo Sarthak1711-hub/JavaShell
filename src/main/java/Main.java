@@ -181,72 +181,116 @@ public class Main {
 
     static List<String> parseCommand(String command) {
 
+        // Store final arguments
         List<String> arguments = new ArrayList<>();
 
+        // Build current argument
         String currentArgument = "";
-        String result = "";
 
+        // Track quote states
         boolean insideSingleQuote = false;
         boolean insideDoubleQuote = false;
 
+        // Process each character
         for (int i = 0; i < command.length(); i++) {
 
             char c = command.charAt(i);
 
-            if (c == '\\') {
-                if (i + 1 < command.length()) {
-                    currentArgument = currentArgument + command.charAt(i + 1);
-                    i++;
-                }
-
-            }
-
-            else if (c == '\'') {
+            // Handle escape character
+            if (c == '\\' && insideSingleQuote == false) {
 
                 if (insideDoubleQuote) {
 
+                    if (i + 1 < command.length()) {
+
+                        if (command.charAt(i + 1) == '"' || command.charAt(i + 1) == '\\') {
+                            // Add escaped character
+                            currentArgument = currentArgument + command.charAt(i + 1);
+                            i++;
+
+                        }
+
+                        else {
+                            currentArgument = currentArgument + c;
+                        }
+
+                    } else {
+
+                        // Add trailing backslash
+                        currentArgument = currentArgument + c;
+                    }
+                } else {
+
+                    if (i + 1 < command.length()) {
+
+                        currentArgument = currentArgument + command.charAt(i + 1);
+                        i++;
+
+                    } else {
+                        currentArgument = currentArgument + c;
+                    }
+
+                }
+            }
+
+            // Handle single quote
+            else if (c == '\'')
+
+            {
+
+                if (insideDoubleQuote) {
+
+                    // Treat as normal character
                     currentArgument = currentArgument + c;
 
                 } else {
 
+                    // Toggle single quote state
                     insideSingleQuote = !insideSingleQuote;
                 }
 
+                // Handle double quote
             } else if (c == '"') {
 
                 if (insideSingleQuote) {
-
+                    // Treat as normal character
                     currentArgument = currentArgument + c;
 
                 } else {
-
+                    // Toggle double quote state
                     insideDoubleQuote = !insideDoubleQuote;
                 }
 
+                // Handle space or tab
             } else if (c == ' ' || c == '\t') {
 
                 if (insideSingleQuote || insideDoubleQuote) {
 
+                    // Keep space inside quotes
                     currentArgument = currentArgument + c;
 
-                } else {
+                }
 
+                else {
+
+                    // End current argument
                     if (!currentArgument.isEmpty()) {
-
                         arguments.add(currentArgument);
-
                         currentArgument = "";
                     }
                 }
 
-            } else {
+            }
 
+            else {
+
+                // Add normal character
                 currentArgument = currentArgument + c;
             }
         }
 
+        // Add last argument
         if (!currentArgument.isEmpty()) {
-
             arguments.add(currentArgument);
         }
 
