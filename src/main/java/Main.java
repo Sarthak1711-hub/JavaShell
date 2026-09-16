@@ -4,29 +4,33 @@ import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.List;
 import java.util.ArrayList;
-import java.io.PrintWriter;
+import java.io.PrintWriter; // PrintWriter is used to write text to the specified file.
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.Completer;
+import org.jline.reader.impl.completer.StringsCompleter;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
         Scanner scanner = new Scanner(System.in);
+        Completer completer = new StringsCompleter("echo", "exit");
+        LineReader reader = LineReaderBuilder.builder().completer(completer).build();
 
         Path currentDirectory = Paths.get(System.getProperty("user.dir"));
 
         while (true) {
 
-            System.out.print("$ ");
-
-            String command = scanner.nextLine();
+            String command = reader.readLine("$ ");
 
             List<String> parts = parseCommand(command);
-
+            
+            String commandName = parts.get(0);
+            
             if (parts.isEmpty()) {
                 continue;
             }
-
-            String commandName = parts.get(0);
 
             if (commandName.equals("exit")) {
 
@@ -392,16 +396,13 @@ public class Main {
                         if (command.charAt(i + 1) == '"'
                                 || command.charAt(i + 1) == '\\') {
 
-                            currentArgument =
-                                    currentArgument
-                                            + command.charAt(i + 1);
+                            currentArgument = currentArgument+ command.charAt(i + 1);
 
                             i++;
 
                         } else {
 
-                            currentArgument =
-                                    currentArgument + c;
+                            currentArgument = currentArgument + c;
                         }
 
                     } else {
