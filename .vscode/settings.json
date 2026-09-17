@@ -1,3 +1,6 @@
 {
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "code-runner.executorMap": {
+    "java": "cd $workspaceRoot && mvn -q compile && java -cp \"target/classes:$HOME/.m2/repository/org/jline/jline/3.30.6/jline-3.30.6.jar\" Main"
+  }
 }
