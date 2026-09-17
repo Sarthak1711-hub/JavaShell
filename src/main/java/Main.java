@@ -8,14 +8,29 @@ import java.io.PrintWriter; // PrintWriter is used to write text to the specifie
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Completer;
-import org.jline.reader.impl.completer.StringsCompleter;
+import org.jline.reader.Candidate;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
         Scanner scanner = new Scanner(System.in);
-        Completer completer = new StringsCompleter("echo", "exit");
+        Completer completer = (reader, line, candidates) -> {
+
+            String word = line.word();
+
+            if ("echo".startsWith(word)) {
+                candidates.add(new Candidate("echo"));
+            }
+
+            if ("exit".startsWith(word)) {
+                candidates.add(new Candidate("exit"));
+            }
+
+            if (candidates.isEmpty()) {
+                System.out.print("\u0007");
+            }
+        };
         LineReader reader = LineReaderBuilder.builder().completer(completer).build();
 
         Path currentDirectory = Paths.get(System.getProperty("user.dir"));
@@ -25,9 +40,9 @@ public class Main {
             String command = reader.readLine("$ ");
 
             List<String> parts = parseCommand(command);
-            
+
             String commandName = parts.get(0);
-            
+
             if (parts.isEmpty()) {
                 continue;
             }
@@ -148,7 +163,8 @@ public class Main {
 
                 String argument = parts.get(1);
 
-                if (argument.equals("exit")|| argument.equals("echo")|| argument.equals("type")|| argument.equals("pwd")|| argument.equals("cd")) {
+                if (argument.equals("exit") || argument.equals("echo") || argument.equals("type")
+                        || argument.equals("pwd") || argument.equals("cd")) {
                     System.out.println(argument + " is a shell builtin");
 
                 } else {
@@ -165,7 +181,7 @@ public class Main {
 
                         Path fullPath = Paths.get(directory, argument);
 
-                        if (Files.exists(fullPath)&& Files.isExecutable(fullPath)) {
+                        if (Files.exists(fullPath) && Files.isExecutable(fullPath)) {
 
                             System.out.println(argument + " is " + fullPath);
 
@@ -210,7 +226,7 @@ public class Main {
                     destination = currentDirectory.resolve(userPath).normalize();
                 }
 
-                if (Files.exists(destination)&& Files.isDirectory(destination)) {
+                if (Files.exists(destination) && Files.isDirectory(destination)) {
 
                     currentDirectory = destination;
 
@@ -245,21 +261,21 @@ public class Main {
 
                     commandParts = new ArrayList<>(parts.subList(0, appendRedirectIndex));
 
-                // Handle stdout overwrite
+                    // Handle stdout overwrite
                 } else if (redirectIndex != -1) {
 
                     outputFile = parts.get(redirectIndex + 1);
 
                     commandParts = new ArrayList<>(parts.subList(0, redirectIndex));
 
-                // Handle stderr append
+                    // Handle stderr append
                 } else if (errorAppendRedirectIndex != -1) {
 
                     errorOutputFile = parts.get(errorAppendRedirectIndex + 1);
 
                     commandParts = new ArrayList<>(parts.subList(0, errorAppendRedirectIndex));
 
-                // Handle stderr overwrite
+                    // Handle stderr overwrite
                 } else if (errorRedirectIndex != -1) {
 
                     errorOutputFile = parts.get(errorRedirectIndex + 1);
@@ -299,7 +315,7 @@ public class Main {
                                 pb.redirectOutput(new java.io.File(outputFile));
                             }
 
-                        // Configure stderr
+                            // Configure stderr
                         } else if (errorOutputFile != null) {
 
                             if (appendError) {
@@ -357,7 +373,7 @@ public class Main {
 
                         if (command.charAt(i + 1) == '"' || command.charAt(i + 1) == '\\') {
 
-                            currentArgument = currentArgument+ command.charAt(i + 1);
+                            currentArgument = currentArgument + command.charAt(i + 1);
 
                             i++;
 
