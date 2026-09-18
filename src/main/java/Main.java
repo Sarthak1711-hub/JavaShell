@@ -4,34 +4,26 @@ import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.List;
 import java.util.ArrayList;
-import java.io.PrintWriter; // PrintWriter is used to write text to the specified file.
+import java.io.PrintWriter;
+
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Completer;
 import org.jline.reader.Candidate;
+import org.jline.reader.ParsedLine;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
         Scanner scanner = new Scanner(System.in);
-        Completer completer = (reader, line, candidates) -> {
 
-            String word = line.word();
+        Completer completer = new MyCompleter();
 
-            if ("echo".startsWith(word)) {
-                candidates.add(new Candidate("echo"));
-            }
-
-            if ("exit".startsWith(word)) {
-                candidates.add(new Candidate("exit"));
-            }
-
-            if (candidates.isEmpty()) {
-                System.out.print("\u0007");
-            }
-        };
-        LineReader reader = LineReaderBuilder.builder().completer(completer).build();
+        LineReader reader = LineReaderBuilder.builder()
+                .completer(completer)
+                .option(LineReader.Option.AUTO_LIST, false)
+                .build();
 
         Path currentDirectory = Paths.get(System.getProperty("user.dir"));
 
@@ -41,11 +33,11 @@ public class Main {
 
             List<String> parts = parseCommand(command);
 
-            String commandName = parts.get(0);
-
             if (parts.isEmpty()) {
                 continue;
             }
+
+            String commandName = parts.get(0);
 
             if (commandName.equals("exit")) {
 
@@ -57,12 +49,10 @@ public class Main {
                 String outputFile = null;
                 String errorOutputFile = null;
 
-                // Find redirection operators
                 int redirectIndex = parts.indexOf(">");
                 int errorRedirectIndex = parts.indexOf("2>");
                 int appendRedirectIndex = parts.indexOf(">>");
 
-                // Get stdout filename
                 if (appendRedirectIndex != -1) {
 
                     outputFile = parts.get(appendRedirectIndex + 1);
@@ -72,13 +62,11 @@ public class Main {
                     outputFile = parts.get(redirectIndex + 1);
                 }
 
-                // Get stderr filename
                 if (errorRedirectIndex != -1) {
 
                     errorOutputFile = parts.get(errorRedirectIndex + 1);
                 }
 
-                // Find where echo arguments should stop
                 if (appendRedirectIndex != -1) {
 
                     endIndex = appendRedirectIndex;
@@ -99,18 +87,17 @@ public class Main {
                 PrintWriter writer = null;
                 PrintWriter errorWriter = null;
 
-                // Create stderr file
                 if (errorOutputFile != null) {
 
                     errorWriter = new PrintWriter(errorOutputFile);
                 }
 
-                // Create stdout file
                 if (outputFile != null) {
 
                     if (appendRedirectIndex != -1) {
 
-                        writer = new PrintWriter(new java.io.FileOutputStream(outputFile, true));
+                        writer = new PrintWriter(
+                                new java.io.FileOutputStream(outputFile, true));
 
                     } else {
 
@@ -118,7 +105,6 @@ public class Main {
                     }
                 }
 
-                // Print echo arguments
                 for (int i = 1; i < endIndex; i++) {
 
                     if (i > 1) {
@@ -163,14 +149,17 @@ public class Main {
 
                 String argument = parts.get(1);
 
-                if (argument.equals("exit") || argument.equals("echo") || argument.equals("type")
-                        || argument.equals("pwd") || argument.equals("cd")) {
+                if (argument.equals("exit")
+                        || argument.equals("echo")
+                        || argument.equals("type")
+                        || argument.equals("pwd")
+                        || argument.equals("cd")) {
+
                     System.out.println(argument + " is a shell builtin");
 
                 } else {
 
                     String path = System.getenv("PATH");
-
                     String[] directories = path.split(":");
 
                     boolean found = false;
@@ -181,9 +170,11 @@ public class Main {
 
                         Path fullPath = Paths.get(directory, argument);
 
-                        if (Files.exists(fullPath) && Files.isExecutable(fullPath)) {
+                        if (Files.exists(fullPath)
+                                && Files.isExecutable(fullPath)) {
 
-                            System.out.println(argument + " is " + fullPath);
+                            System.out.println(
+                                    argument + " is " + fullPath);
 
                             found = true;
 
@@ -223,16 +214,21 @@ public class Main {
 
                 } else {
 
-                    destination = currentDirectory.resolve(userPath).normalize();
+                    destination = currentDirectory
+                            .resolve(userPath)
+                            .normalize();
                 }
 
-                if (Files.exists(destination) && Files.isDirectory(destination)) {
+                if (Files.exists(destination)
+                        && Files.isDirectory(destination)) {
 
                     currentDirectory = destination;
 
                 } else {
 
-                    System.out.println("cd: " + inputPath + ": No such file or directory");
+                    System.out.println(
+                            "cd: " + inputPath
+                                    + ": No such file or directory");
                 }
 
             } else {
@@ -242,7 +238,6 @@ public class Main {
                 String outputFile = null;
                 String errorOutputFile = null;
 
-                // Find redirection operators
                 int redirectIndex = parts.indexOf(">");
                 int appendRedirectIndex = parts.indexOf(">>");
                 int errorRedirectIndex = parts.indexOf("2>");
@@ -254,33 +249,35 @@ public class Main {
 
                 List<String> commandParts;
 
-                // Handle stdout append
                 if (appendRedirectIndex != -1) {
 
                     outputFile = parts.get(appendRedirectIndex + 1);
 
-                    commandParts = new ArrayList<>(parts.subList(0, appendRedirectIndex));
+                    commandParts = new ArrayList<>(
+                            parts.subList(0, appendRedirectIndex));
 
-                    // Handle stdout overwrite
                 } else if (redirectIndex != -1) {
 
                     outputFile = parts.get(redirectIndex + 1);
 
-                    commandParts = new ArrayList<>(parts.subList(0, redirectIndex));
+                    commandParts = new ArrayList<>(
+                            parts.subList(0, redirectIndex));
 
-                    // Handle stderr append
                 } else if (errorAppendRedirectIndex != -1) {
 
-                    errorOutputFile = parts.get(errorAppendRedirectIndex + 1);
+                    errorOutputFile =
+                            parts.get(errorAppendRedirectIndex + 1);
 
-                    commandParts = new ArrayList<>(parts.subList(0, errorAppendRedirectIndex));
+                    commandParts = new ArrayList<>(
+                            parts.subList(0, errorAppendRedirectIndex));
 
-                    // Handle stderr overwrite
                 } else if (errorRedirectIndex != -1) {
 
-                    errorOutputFile = parts.get(errorRedirectIndex + 1);
+                    errorOutputFile =
+                            parts.get(errorRedirectIndex + 1);
 
-                    commandParts = new ArrayList<>(parts.subList(0, errorRedirectIndex));
+                    commandParts = new ArrayList<>(
+                            parts.subList(0, errorRedirectIndex));
 
                 } else {
 
@@ -299,32 +296,38 @@ public class Main {
 
                     Path fullPath = Paths.get(directory, programName);
 
-                    if (Files.exists(fullPath) && Files.isExecutable(fullPath)) {
+                    if (Files.exists(fullPath)
+                            && Files.isExecutable(fullPath)) {
 
-                        ProcessBuilder pb = new ProcessBuilder(commandParts);
+                        ProcessBuilder pb =
+                                new ProcessBuilder(commandParts);
 
-                        // Configure stdout
                         if (outputFile != null) {
 
                             if (appendOutput) {
 
-                                pb.redirectOutput(ProcessBuilder.Redirect.appendTo(new java.io.File(outputFile)));
+                                pb.redirectOutput(
+                                        ProcessBuilder.Redirect.appendTo(
+                                                new java.io.File(outputFile)));
 
                             } else {
 
-                                pb.redirectOutput(new java.io.File(outputFile));
+                                pb.redirectOutput(
+                                        new java.io.File(outputFile));
                             }
 
-                            // Configure stderr
                         } else if (errorOutputFile != null) {
 
                             if (appendError) {
 
-                                pb.redirectError(ProcessBuilder.Redirect.appendTo(new java.io.File(errorOutputFile)));
+                                pb.redirectError(
+                                        ProcessBuilder.Redirect.appendTo(
+                                                new java.io.File(errorOutputFile)));
 
                             } else {
 
-                                pb.redirectError(new java.io.File(errorOutputFile));
+                                pb.redirectError(
+                                        new java.io.File(errorOutputFile));
                             }
 
                         } else {
@@ -344,13 +347,137 @@ public class Main {
 
                 if (!found) {
 
-                    System.out.println(programName + ": command not found");
+                    System.out.println(
+                            programName + ": command not found");
                 }
             }
         }
 
         scanner.close();
     }
+
+
+    // Completion logic
+    static class MyCompleter implements Completer {
+
+        private int tabCount = 0;
+        private String previousInput = "";
+
+        @Override
+        public void complete(
+                LineReader reader,
+                ParsedLine line,
+                List<Candidate> candidates) {
+
+            String word = line.word();
+
+            // Reset TAB count when input changes
+            if (!word.equals(previousInput)) {
+
+                tabCount = 0;
+                previousInput = word;
+            }
+
+            // Store matching executable names
+            List<String> matches = new ArrayList<>();
+
+            String path = System.getenv("PATH");
+
+            String[] directories = path.split(":");
+
+            // Search every directory in PATH
+            for (int i = 0; i < directories.length; i++) {
+
+                String directory = directories[i];
+
+                Path dir = Paths.get(directory);
+
+                if (!Files.exists(dir) || !Files.isDirectory(dir)) {
+
+                    continue;
+                }
+
+                try {
+
+                    List<Path> files = Files.list(dir).toList();
+
+                    for (int j = 0; j < files.size(); j++) {
+
+                        Path file = files.get(j);
+
+                        String fileName = file.getFileName().toString();
+
+                        if (fileName.startsWith(word)
+                                && Files.isRegularFile(file)
+                                && Files.isExecutable(file)) {
+
+                            matches.add(fileName);
+                        }
+                    }
+
+                } catch (Exception e) {
+
+                    // Ignore directories that cannot be read
+                }
+            }
+
+            // No matches
+            if (matches.isEmpty()) {
+
+                System.out.print("\u0007");
+                System.out.flush();
+
+                return;
+            }
+
+            // Multiple matches
+            if (matches.size() > 1) {
+
+                tabCount++;
+
+                // First TAB
+                if (tabCount == 1) {
+
+                    System.out.print("\u0007");
+                    System.out.flush();
+
+                // Second TAB
+                } else if (tabCount == 2) {
+
+                    // Sort alphabetically
+                    matches.sort((a, b) -> a.compareTo(b));
+
+                    String output = "";
+
+                    for (int i = 0; i < matches.size(); i++) {
+
+                        if (i > 0) {
+
+                            output = output + "  ";
+                        }
+
+                        output = output + matches.get(i);
+                    }
+
+                    // Print matches above the current prompt
+                    reader.printAbove(output);
+
+                    // Reset TAB sequence
+                    tabCount = 0;
+                }
+
+            // Exactly one match
+            } else {
+
+                candidates.add(
+                        new Candidate(matches.get(0))
+                );
+
+                tabCount = 0;
+            }
+        }
+    }
+
 
     static List<String> parseCommand(String command) {
 
@@ -371,33 +498,40 @@ public class Main {
 
                     if (i + 1 < command.length()) {
 
-                        if (command.charAt(i + 1) == '"' || command.charAt(i + 1) == '\\') {
+                        if (command.charAt(i + 1) == '"'
+                                || command.charAt(i + 1) == '\\') {
 
-                            currentArgument = currentArgument + command.charAt(i + 1);
+                            currentArgument =
+                                    currentArgument
+                                            + command.charAt(i + 1);
 
                             i++;
 
                         } else {
 
-                            currentArgument = currentArgument + c;
+                            currentArgument =
+                                    currentArgument + c;
                         }
 
                     } else {
 
-                        currentArgument = currentArgument + c;
+                        currentArgument =
+                                currentArgument + c;
                     }
 
                 } else {
 
                     if (i + 1 < command.length()) {
 
-                        currentArgument = currentArgument + command.charAt(i + 1);
+                        currentArgument =
+                                currentArgument + command.charAt(i + 1);
 
                         i++;
 
                     } else {
 
-                        currentArgument = currentArgument + c;
+                        currentArgument =
+                                currentArgument + c;
                     }
                 }
 
@@ -405,29 +539,34 @@ public class Main {
 
                 if (insideDoubleQuote) {
 
-                    currentArgument = currentArgument + c;
+                    currentArgument =
+                            currentArgument + c;
 
                 } else {
 
-                    insideSingleQuote = !insideSingleQuote;
+                    insideSingleQuote =
+                            !insideSingleQuote;
                 }
 
             } else if (c == '"') {
 
                 if (insideSingleQuote) {
 
-                    currentArgument = currentArgument + c;
+                    currentArgument =
+                            currentArgument + c;
 
                 } else {
 
-                    insideDoubleQuote = !insideDoubleQuote;
+                    insideDoubleQuote =
+                            !insideDoubleQuote;
                 }
 
             } else if (c == ' ' || c == '\t') {
 
                 if (insideSingleQuote || insideDoubleQuote) {
 
-                    currentArgument = currentArgument + c;
+                    currentArgument =
+                            currentArgument + c;
 
                 } else {
 
@@ -441,7 +580,8 @@ public class Main {
 
             } else {
 
-                currentArgument = currentArgument + c;
+                currentArgument =
+                        currentArgument + c;
             }
         }
 
