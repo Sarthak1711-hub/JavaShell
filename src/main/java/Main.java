@@ -4,6 +4,7 @@ import java.nio.file.Paths;
 import java.util.Scanner;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.io.PrintWriter;
 
 import org.jline.reader.LineReader;
@@ -244,7 +245,6 @@ public class Main {
                 int errorAppendRedirectIndex = parts.indexOf("2>>");
 
                 boolean appendOutput = appendRedirectIndex != -1;
-
                 boolean appendError = errorAppendRedirectIndex != -1;
 
                 List<String> commandParts;
@@ -265,16 +265,14 @@ public class Main {
 
                 } else if (errorAppendRedirectIndex != -1) {
 
-                    errorOutputFile =
-                            parts.get(errorAppendRedirectIndex + 1);
+                    errorOutputFile = parts.get(errorAppendRedirectIndex + 1);
 
                     commandParts = new ArrayList<>(
                             parts.subList(0, errorAppendRedirectIndex));
 
                 } else if (errorRedirectIndex != -1) {
 
-                    errorOutputFile =
-                            parts.get(errorRedirectIndex + 1);
+                    errorOutputFile = parts.get(errorRedirectIndex + 1);
 
                     commandParts = new ArrayList<>(
                             parts.subList(0, errorRedirectIndex));
@@ -285,7 +283,6 @@ public class Main {
                 }
 
                 String path = System.getenv("PATH");
-
                 String[] directories = path.split(":");
 
                 boolean found = false;
@@ -299,8 +296,7 @@ public class Main {
                     if (Files.exists(fullPath)
                             && Files.isExecutable(fullPath)) {
 
-                        ProcessBuilder pb =
-                                new ProcessBuilder(commandParts);
+                        ProcessBuilder pb = new ProcessBuilder(commandParts);
 
                         if (outputFile != null) {
 
@@ -356,12 +352,10 @@ public class Main {
         scanner.close();
     }
 
-
-    // Completion logic
     static class MyCompleter implements Completer {
 
+        private String previousWord = "";
         private int tabCount = 0;
-        private String previousInput = "";
 
         @Override
         public void complete(
@@ -371,29 +365,23 @@ public class Main {
 
             String word = line.word();
 
-            // Reset TAB count when input changes
-            if (!word.equals(previousInput)) {
-
+            // Reset TAB count when the user changes the input
+            if (!word.equals(previousWord)) {
                 tabCount = 0;
-                previousInput = word;
+                previousWord = word;
             }
 
-            // Store matching executable names
             List<String> matches = new ArrayList<>();
 
             String path = System.getenv("PATH");
-
             String[] directories = path.split(":");
 
-            // Search every directory in PATH
-            for (int i = 0; i < directories.length; i++) {
-
-                String directory = directories[i];
+            // Find executable matches
+            for (String directory : directories) {
 
                 Path dir = Paths.get(directory);
 
                 if (!Files.exists(dir) || !Files.isDirectory(dir)) {
-
                     continue;
                 }
 
@@ -401,9 +389,7 @@ public class Main {
 
                     List<Path> files = Files.list(dir).toList();
 
-                    for (int j = 0; j < files.size(); j++) {
-
-                        Path file = files.get(j);
+                    for (Path file : files) {
 
                         String fileName = file.getFileName().toString();
 
@@ -411,18 +397,98 @@ public class Main {
                                 && Files.isRegularFile(file)
                                 && Files.isExecutable(file)) {
 
-                            matches.add(fileName);
+                            if (!matches.contains(fileName)) {
+                                matches.add(fileName);
+                            }
                         }
                     }
 
                 } catch (Exception e) {
-
-                    // Ignore directories that cannot be read
+                    // Ignore unreadable directories
                 }
             }
 
-            // No matches
+            Collections.sort(matches);
+
+            // --------------------------------
+            // 1. NO MATCHES
+            // --------------------------------
+
             if (matches.isEmpty()) {
+
+                System.out.print("\u0007");
+                System.out.flush();
+
+                tabCount = 0;
+
+                return;
+            }
+
+            // --------------------------------
+            // 2. EXACTLY ONE MATCH
+            // --------------------------------
+
+            if (matches.size() == 1) {
+
+                String match = matches.get(0);
+
+                candidates.add(
+                        new Candidate(
+                                match,
+                                match,
+                                null,
+                                null,
+                                " ",
+                                null,
+                                true));
+
+                tabCount = 0;
+
+                return;
+            }
+
+            // --------------------------------
+            // 3. FIND LONGEST COMMON PREFIX
+            // --------------------------------
+
+            String commonPrefix = matches.get(0);
+
+            for (int i = 1; i < matches.size(); i++) {
+
+                commonPrefix = findCommonPrefix(
+                        commonPrefix,
+                        matches.get(i));
+            }
+
+            // --------------------------------
+            // 4. LCP CAN EXTEND USER INPUT
+            // --------------------------------
+
+            if (commonPrefix.length() > word.length()) {
+
+                candidates.add(
+                        new Candidate(
+                                commonPrefix,
+                                commonPrefix,
+                                null,
+                                null,
+                                null,
+                                null,
+                                true));
+
+                tabCount = 0;
+
+                return;
+            }
+
+            // --------------------------------
+            // 5. LCP CANNOT EXTEND
+            // --------------------------------
+
+            tabCount++;
+
+            // First TAB -> bell
+            if (tabCount == 1) {
 
                 System.out.print("\u0007");
                 System.out.flush();
@@ -430,54 +496,45 @@ public class Main {
                 return;
             }
 
-            // Multiple matches
-            if (matches.size() > 1) {
+            // --------------------------------
+            // 6. SECOND TAB -> SHOW MATCHES
+            // --------------------------------
 
-                tabCount++;
-
-                // First TAB
-                if (tabCount == 1) {
-
-                    System.out.print("\u0007");
-                    System.out.flush();
-
-                // Second TAB
-                } else if (tabCount == 2) {
-
-                    // Sort alphabetically
-                    matches.sort((a, b) -> a.compareTo(b));
-
-                    String output = "";
-
-                    for (int i = 0; i < matches.size(); i++) {
-
-                        if (i > 0) {
-
-                            output = output + "  ";
-                        }
-
-                        output = output + matches.get(i);
-                    }
-
-                    // Print matches above the current prompt
-                    reader.printAbove(output);
-
-                    // Reset TAB sequence
-                    tabCount = 0;
-                }
-
-            // Exactly one match
-            } else {
+            for (String match : matches) {
 
                 candidates.add(
-                        new Candidate(matches.get(0))
-                );
-
-                tabCount = 0;
+                        new Candidate(
+                                match,
+                                match,
+                                null,
+                                null,
+                                null,
+                                null,
+                                true));
             }
+
+            tabCount = 0;
+        }
+
+        private String findCommonPrefix(
+                String first,
+                String second) {
+
+            int length = Math.min(
+                    first.length(),
+                    second.length());
+
+            int i = 0;
+
+            while (i < length
+                    && first.charAt(i) == second.charAt(i)) {
+
+                i++;
+            }
+
+            return first.substring(0, i);
         }
     }
-
 
     static List<String> parseCommand(String command) {
 
@@ -501,37 +558,33 @@ public class Main {
                         if (command.charAt(i + 1) == '"'
                                 || command.charAt(i + 1) == '\\') {
 
-                            currentArgument =
-                                    currentArgument
-                                            + command.charAt(i + 1);
+                            currentArgument = currentArgument
+                                    + command.charAt(i + 1);
 
                             i++;
 
                         } else {
 
-                            currentArgument =
-                                    currentArgument + c;
+                            currentArgument = currentArgument + c;
                         }
 
                     } else {
 
-                        currentArgument =
-                                currentArgument + c;
+                        currentArgument = currentArgument + c;
                     }
 
                 } else {
 
                     if (i + 1 < command.length()) {
 
-                        currentArgument =
-                                currentArgument + command.charAt(i + 1);
+                        currentArgument = currentArgument
+                                + command.charAt(i + 1);
 
                         i++;
 
                     } else {
 
-                        currentArgument =
-                                currentArgument + c;
+                        currentArgument = currentArgument + c;
                     }
                 }
 
@@ -539,34 +592,29 @@ public class Main {
 
                 if (insideDoubleQuote) {
 
-                    currentArgument =
-                            currentArgument + c;
+                    currentArgument = currentArgument + c;
 
                 } else {
 
-                    insideSingleQuote =
-                            !insideSingleQuote;
+                    insideSingleQuote = !insideSingleQuote;
                 }
 
             } else if (c == '"') {
 
                 if (insideSingleQuote) {
 
-                    currentArgument =
-                            currentArgument + c;
+                    currentArgument = currentArgument + c;
 
                 } else {
 
-                    insideDoubleQuote =
-                            !insideDoubleQuote;
+                    insideDoubleQuote = !insideDoubleQuote;
                 }
 
             } else if (c == ' ' || c == '\t') {
 
                 if (insideSingleQuote || insideDoubleQuote) {
 
-                    currentArgument =
-                            currentArgument + c;
+                    currentArgument = currentArgument + c;
 
                 } else {
 
@@ -580,8 +628,7 @@ public class Main {
 
             } else {
 
-                currentArgument =
-                        currentArgument + c;
+                currentArgument = currentArgument + c;
             }
         }
 
