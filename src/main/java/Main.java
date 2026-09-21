@@ -637,6 +637,7 @@ public class Main {
             arguments.add(currentArgument);
         }
 
+        
         return arguments;
     }
 }
