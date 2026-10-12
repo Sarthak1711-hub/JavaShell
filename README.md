@@ -4,7 +4,7 @@
 ![REPL](https://img.shields.io/badge/Pattern-REPL-blueviolet?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
-# 🐚 JavaShell
+# 🐚 JavaShell  
 
 > A Unix-like shell built from scratch in Java — engineered for command parsing, process management, and executable discovery across the system PATH.
 
