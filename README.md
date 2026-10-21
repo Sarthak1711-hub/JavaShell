@@ -12,7 +12,7 @@ Built with **Java 11+ · Maven · Java NIO**
 
 ---
 
-## 📌 Overview
+## 📌 Overview 
 
 JavaShell is a lightweight, feature-complete command-line shell that reads user commands, resolves executables, and spawns child processes. It demonstrates core OS and Java concepts through a clean, production-grade implementation.
 
