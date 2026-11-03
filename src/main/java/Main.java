@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.io.PrintWriter;
-
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Completer;
@@ -19,14 +18,14 @@ public class Main {
 
         Scanner scanner = new Scanner(System.in);
 
-        Completer completer = new MyCompleter();
+        Path currentDirectory = Paths.get(System.getProperty("user.dir"));
+
+        MyCompleter completer = new MyCompleter(currentDirectory);
 
         LineReader reader = LineReaderBuilder.builder()
                 .completer(completer)
                 .option(LineReader.Option.AUTO_LIST, false)
                 .build();
-
-        Path currentDirectory = Paths.get(System.getProperty("user.dir"));
 
         while (true) {
 
@@ -224,6 +223,7 @@ public class Main {
                         && Files.isDirectory(destination)) {
 
                     currentDirectory = destination;
+                    completer.setCurrentDirectory(currentDirectory);
 
                 } else {
 
@@ -356,6 +356,15 @@ public class Main {
 
         private String previousWord = "";
         private int tabCount = 0;
+        private Path currentDirectory;
+
+        MyCompleter(Path currentDirectory) {
+            this.currentDirectory = currentDirectory;
+        }
+
+        void setCurrentDirectory(Path newDirectory) {
+            this.currentDirectory = newDirectory;
+        }
 
         @Override
         public void complete(
@@ -364,6 +373,38 @@ public class Main {
                 List<Candidate> candidates) {
 
             String word = line.word();
+
+            if (line.wordIndex() > 0) {
+
+                Path dir = currentDirectory;
+
+                List<String> matchingFiles = new ArrayList<>();
+
+                try (var files = Files.list(dir)) {
+
+                    for (Path file : files.toList()) {
+
+                        String fileName = file.getFileName().toString();
+
+                        if (fileName.startsWith(word)) {
+                            matchingFiles.add(fileName);
+                        }
+                    }
+
+                } catch (Exception e) {
+                    // Ignore errors while reading the current directory
+                    return;
+                }
+
+                if (matchingFiles.size() == 1) {
+                    String match = matchingFiles.get(0);
+                    candidates.add(new Candidate(
+                            match, match, null, null, " ", null, true));
+                }
+
+                return;
+
+            }
 
             // Reset TAB count when the user changes the input
             if (!word.equals(previousWord)) {
@@ -637,7 +678,6 @@ public class Main {
             arguments.add(currentArgument);
         }
 
-        
         return arguments;
     }
 }
