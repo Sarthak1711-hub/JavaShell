@@ -1,4 +1,5 @@
 import java.nio.file.Files;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
@@ -367,15 +368,50 @@ public class Main {
         }
 
         @Override
-        public void complete(
-                LineReader reader,
-                ParsedLine line,
-                List<Candidate> candidates) {
+        public void complete(LineReader reader,ParsedLine line,List<Candidate> candidates) {
 
             String word = line.word();
 
             if (line.wordIndex() > 0) {
 
+                // Nested path completion (steps 1–7 only)
+                if (word.contains("/")) {
+
+                    int index = word.lastIndexOf("/");
+
+                    String directoryPath = word.substring(0, index + 1);
+                    String prefix = word.substring(index + 1);
+                    List<String> matchingFiles = new ArrayList<>();
+                    Path directory = currentDirectory.resolve(directoryPath).normalize();
+
+                    try (DirectoryStream<Path> files = Files.newDirectoryStream(directory)) {
+
+                        for (Path file : files) {
+
+                            String fileName = file.getFileName().toString();
+
+                            if (fileName.startsWith(prefix)) {
+
+                                matchingFiles.add(directoryPath + fileName);
+                            }
+                        }
+
+                    } catch (Exception e) {
+
+                        return;
+                    }
+                    if (matchingFiles.size() == 1) {
+
+                        String match = matchingFiles.get(0);
+
+                        candidates.add(new Candidate(match, match, null, null, " ", null, true));
+
+                    }
+
+                    return;
+                }
+
+                // Current-directory filename completion
                 Path dir = currentDirectory;
 
                 List<String> matchingFiles = new ArrayList<>();
