@@ -23,9 +23,7 @@ public class Main {
 
         MyCompleter completer = new MyCompleter(currentDirectory);
 
-        LineReader reader = LineReaderBuilder.builder()
-                .completer(completer)
-                .option(LineReader.Option.AUTO_LIST, false)
+        LineReader reader = LineReaderBuilder.builder().completer(completer).option(LineReader.Option.AUTO_LIST, false)
                 .build();
 
         while (true) {
@@ -368,81 +366,97 @@ public class Main {
         }
 
         @Override
-        public void complete(LineReader reader,ParsedLine line,List<Candidate> candidates) {
+        public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
 
             String word = line.word();
 
+            // Complete command arguments: files and directories.
             if (line.wordIndex() > 0) {
 
-                // Nested path completion (steps 1–7 only)
+                // Nested path completion, for example: ls pig/do<TAB>
                 if (word.contains("/")) {
 
                     int index = word.lastIndexOf("/");
 
+                    // Keep exactly the path prefix the user already typed.
                     String directoryPath = word.substring(0, index + 1);
                     String prefix = word.substring(index + 1);
-                    List<String> matchingFiles = new ArrayList<>();
+
                     Path directory = currentDirectory.resolve(directoryPath).normalize();
+                    List<Path> matchingFiles = new ArrayList<>();
 
                     try (DirectoryStream<Path> files = Files.newDirectoryStream(directory)) {
 
                         for (Path file : files) {
-
                             String fileName = file.getFileName().toString();
 
                             if (fileName.startsWith(prefix)) {
-
-                                matchingFiles.add(directoryPath + fileName);
+                                matchingFiles.add(file);
                             }
                         }
 
                     } catch (Exception e) {
-
                         return;
                     }
+
+                    // This stage only needs to handle exactly one match.
                     if (matchingFiles.size() == 1) {
 
-                        String match = matchingFiles.get(0);
+                        Path match = matchingFiles.get(0);
 
-                        candidates.add(new Candidate(match, match, null, null, " ", null, true));
+                        // Use the typed prefix, not match.toString(), because
+                        // match.toString() may be an absolute filesystem path.
+                        String matchName = directoryPath + match.getFileName().toString();
 
+                        if (Files.isDirectory(match)) {
+                            matchName = matchName + "/";
+                            candidates.add(new Candidate(
+                                    matchName, matchName, null, null, null, null, true));
+                        } else {
+                            candidates.add(new Candidate(
+                                    matchName, matchName, null, null, " ", null, true));
+                        }
                     }
 
                     return;
                 }
 
-                // Current-directory filename completion
-                Path dir = currentDirectory;
+                // Current-directory completion, for example: ls pi<TAB>
+                List<Path> matchingFiles = new ArrayList<>();
 
-                List<String> matchingFiles = new ArrayList<>();
-
-                try (var files = Files.list(dir)) {
+                try (var files = Files.list(currentDirectory)) {
 
                     for (Path file : files.toList()) {
-
                         String fileName = file.getFileName().toString();
 
                         if (fileName.startsWith(word)) {
-                            matchingFiles.add(fileName);
+                            matchingFiles.add(file);
                         }
                     }
 
                 } catch (Exception e) {
-                    // Ignore errors while reading the current directory
                     return;
                 }
 
                 if (matchingFiles.size() == 1) {
-                    String match = matchingFiles.get(0);
-                    candidates.add(new Candidate(
-                            match, match, null, null, " ", null, true));
+
+                    Path match = matchingFiles.get(0);
+                    String matchName = match.getFileName().toString();
+
+                    if (Files.isDirectory(match)) {
+                        matchName = matchName + "/";
+                        candidates.add(new Candidate(
+                                matchName, matchName, null, null, null, null, true));
+                    } else {
+                        candidates.add(new Candidate(
+                                matchName, matchName, null, null, " ", null, true));
+                    }
                 }
 
                 return;
-
             }
 
-            // Reset TAB count when the user changes the input
+            // Reset TAB count when the user changes the command input.
             if (!word.equals(previousWord)) {
                 tabCount = 0;
                 previousWord = word;
@@ -453,7 +467,7 @@ public class Main {
             String path = System.getenv("PATH");
             String[] directories = path.split(":");
 
-            // Find executable matches
+            // Find executable matches for command-name completion.
             for (String directory : directories) {
 
                 Path dir = Paths.get(directory);
@@ -463,11 +477,9 @@ public class Main {
                 }
 
                 try {
-
                     List<Path> files = Files.list(dir).toList();
 
                     for (Path file : files) {
-
                         String fileName = file.getFileName().toString();
 
                         if (fileName.startsWith(word)
@@ -481,131 +493,71 @@ public class Main {
                     }
 
                 } catch (Exception e) {
-                    // Ignore unreadable directories
+                    // Ignore unreadable directories.
                 }
             }
 
             Collections.sort(matches);
 
-            // --------------------------------
-            // 1. NO MATCHES
-            // --------------------------------
-
+            // No matches: ring the bell.
             if (matches.isEmpty()) {
-
                 System.out.print("\u0007");
                 System.out.flush();
-
                 tabCount = 0;
-
                 return;
             }
 
-            // --------------------------------
-            // 2. EXACTLY ONE MATCH
-            // --------------------------------
-
+            // Exactly one command match.
             if (matches.size() == 1) {
-
                 String match = matches.get(0);
 
-                candidates.add(
-                        new Candidate(
-                                match,
-                                match,
-                                null,
-                                null,
-                                " ",
-                                null,
-                                true));
+                candidates.add(new Candidate(
+                        match, match, null, null, " ", null, true));
 
                 tabCount = 0;
-
                 return;
             }
 
-            // --------------------------------
-            // 3. FIND LONGEST COMMON PREFIX
-            // --------------------------------
-
+            // Find the longest common prefix.
             String commonPrefix = matches.get(0);
 
             for (int i = 1; i < matches.size(); i++) {
-
-                commonPrefix = findCommonPrefix(
-                        commonPrefix,
-                        matches.get(i));
+                commonPrefix = findCommonPrefix(commonPrefix, matches.get(i));
             }
 
-            // --------------------------------
-            // 4. LCP CAN EXTEND USER INPUT
-            // --------------------------------
-
+            // Extend the input if the common prefix is longer.
             if (commonPrefix.length() > word.length()) {
-
-                candidates.add(
-                        new Candidate(
-                                commonPrefix,
-                                commonPrefix,
-                                null,
-                                null,
-                                null,
-                                null,
-                                true));
+                candidates.add(new Candidate(
+                        commonPrefix, commonPrefix, null, null, null, null, true));
 
                 tabCount = 0;
-
                 return;
             }
 
-            // --------------------------------
-            // 5. LCP CANNOT EXTEND
-            // --------------------------------
-
+            // If the prefix cannot be extended, first TAB rings the bell.
             tabCount++;
 
-            // First TAB -> bell
             if (tabCount == 1) {
-
                 System.out.print("\u0007");
                 System.out.flush();
-
                 return;
             }
 
-            // --------------------------------
-            // 6. SECOND TAB -> SHOW MATCHES
-            // --------------------------------
-
+            // Second TAB displays all matching commands.
             for (String match : matches) {
-
-                candidates.add(
-                        new Candidate(
-                                match,
-                                match,
-                                null,
-                                null,
-                                null,
-                                null,
-                                true));
+                candidates.add(new Candidate(
+                        match, match, null, null, null, null, true));
             }
 
             tabCount = 0;
         }
 
-        private String findCommonPrefix(
-                String first,
-                String second) {
+        private String findCommonPrefix(String first, String second) {
 
-            int length = Math.min(
-                    first.length(),
-                    second.length());
-
+            int length = Math.min(first.length(), second.length());
             int i = 0;
 
-            while (i < length
-                    && first.charAt(i) == second.charAt(i)) {
-
+            while (i < length && first.charAt(i) == second.charAt(i)) {
                 i++;
             }
 
@@ -632,11 +584,9 @@ public class Main {
 
                     if (i + 1 < command.length()) {
 
-                        if (command.charAt(i + 1) == '"'
-                                || command.charAt(i + 1) == '\\') {
+                        if (command.charAt(i + 1) == '"' || command.charAt(i + 1) == '\\') {
 
-                            currentArgument = currentArgument
-                                    + command.charAt(i + 1);
+                            currentArgument = currentArgument + command.charAt(i + 1);
 
                             i++;
 
@@ -654,8 +604,7 @@ public class Main {
 
                     if (i + 1 < command.length()) {
 
-                        currentArgument = currentArgument
-                                + command.charAt(i + 1);
+                        currentArgument = currentArgument + command.charAt(i + 1);
 
                         i++;
 
