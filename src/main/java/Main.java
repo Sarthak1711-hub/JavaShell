@@ -396,9 +396,10 @@ public class Main {
                         }
 
                     } catch (Exception e) {
+                        System.out.print("\u0007");
+                        System.out.flush();
                         return;
                     }
-
                     // This stage only needs to handle exactly one match.
                     if (matchingFiles.size() == 1) {
 
@@ -416,6 +417,10 @@ public class Main {
                             candidates.add(new Candidate(
                                     matchName, matchName, null, null, " ", null, true));
                         }
+                    }
+                    if (matchingFiles.isEmpty()) {
+                        System.out.print("\u0007");
+                        System.out.flush();
                     }
 
                     return;
@@ -435,6 +440,8 @@ public class Main {
                     }
 
                 } catch (Exception e) {
+                    System.out.print("\u0007");
+                    System.out.flush();
                     return;
                 }
 
@@ -452,12 +459,18 @@ public class Main {
                                 matchName, matchName, null, null, " ", null, true));
                     }
                 }
+                if (matchingFiles.isEmpty()) {
+                    System.out.print("\u0007");
+                    System.out.flush();
+                }
 
                 return;
             }
 
             // Reset TAB count when the user changes the command input.
-            if (!word.equals(previousWord)) {
+            if (!word.equals(previousWord))
+
+            {
                 tabCount = 0;
                 previousWord = word;
             }
@@ -563,6 +576,7 @@ public class Main {
 
             return first.substring(0, i);
         }
+
     }
 
     static List<String> parseCommand(String command) {
