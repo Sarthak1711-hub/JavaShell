@@ -1,7 +1,6 @@
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 
@@ -13,10 +12,7 @@ public class Shell {
 
         CommandCompleter completer = new CommandCompleter(currentDirectory);
 
-        LineReader reader = LineReaderBuilder.builder()
-                .completer(completer)
-                .option(LineReader.Option.AUTO_LIST, false)
-                .build();
+        LineReader reader = LineReaderBuilder.builder().completer(completer).option(LineReader.Option.AUTO_LIST, false).build();
 
         while (true) {
 
@@ -52,11 +48,7 @@ public class Shell {
 
             } else if (commandName.equals("cd")) {
 
-                currentDirectory = BuiltinCommands.cd(
-                        parts,
-                        currentDirectory,
-                        completer
-                );
+                currentDirectory = BuiltinCommands.cd(parts,currentDirectory,completer);
 
             } else {
 

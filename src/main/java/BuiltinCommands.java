@@ -15,7 +15,6 @@ public class BuiltinCommands {
         int endIndex;
         String outputFile = null;
         String errorOutputFile = null;
-
         int redirectIndex = parts.indexOf(">");
         int errorRedirectIndex = parts.indexOf("2>");
         int appendRedirectIndex = parts.indexOf(">>");
@@ -54,8 +53,7 @@ public class BuiltinCommands {
         if (outputFile != null) {
 
             if (appendRedirectIndex != -1) {
-                writer = new PrintWriter(
-                        new FileOutputStream(outputFile, true));
+                writer = new PrintWriter(new FileOutputStream(outputFile, true));
 
             } else {
                 writer = new PrintWriter(outputFile);
@@ -98,10 +96,7 @@ public class BuiltinCommands {
     }
 
     // CD COMMAND
-    public static Path cd(
-            List<String> parts,
-            Path currentDirectory,
-            CommandCompleter completer) {
+    public static Path cd(List<String> parts,Path currentDirectory,CommandCompleter completer) {
 
         if (parts.size() < 2) {
             return currentDirectory;
@@ -144,8 +139,7 @@ public class BuiltinCommands {
             return destination;
 
         } else {
-            System.out.println(
-                    "cd: " + inputPath + ": No such file or directory");
+            System.out.println("cd: " + inputPath + ": No such file or directory");
 
             return currentDirectory;
         }
@@ -154,11 +148,7 @@ public class BuiltinCommands {
     // TYPE COMMAND
     public static void type(String argument) {
 
-        if (argument.equals("exit")
-                || argument.equals("echo")
-                || argument.equals("type")
-                || argument.equals("pwd")
-                || argument.equals("cd")) {
+        if (argument.equals("exit")|| argument.equals("echo")|| argument.equals("type")|| argument.equals("pwd")|| argument.equals("cd")) {
 
             System.out.println(argument + " is a shell builtin");
 
@@ -175,8 +165,7 @@ public class BuiltinCommands {
 
                 Path fullPath = Paths.get(directory, argument);
 
-                if (Files.exists(fullPath)
-                        && Files.isExecutable(fullPath)) {
+                if (Files.exists(fullPath) && Files.isExecutable(fullPath)) {
 
                     System.out.println(argument + " is " + fullPath);
 

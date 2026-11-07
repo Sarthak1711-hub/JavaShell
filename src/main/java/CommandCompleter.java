@@ -2,11 +2,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.DirectoryStream;
-
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
-
 import org.jline.reader.Completer;
 import org.jline.reader.LineReader;
 import org.jline.reader.ParsedLine;
@@ -27,8 +25,7 @@ public class CommandCompleter implements Completer {
     }
 
     @Override
-    public void complete(LineReader reader, ParsedLine line,
-            List<Candidate> candidates) {
+    public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
 
         String word = line.word();
 
@@ -53,8 +50,7 @@ public class CommandCompleter implements Completer {
             Path directory = currentDirectory.resolve(directoryPath).normalize();
             List<Path> matchingFiles = new ArrayList<>();
 
-            try (DirectoryStream<Path> files =
-                    Files.newDirectoryStream(directory)) {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(directory)) {
 
                 for (Path file : files) {
                     String fileName = file.getFileName().toString();
@@ -75,18 +71,13 @@ public class CommandCompleter implements Completer {
             if (matchingFiles.size() == 1) {
 
                 Path match = matchingFiles.get(0);
-                String matchName = directoryPath
-                        + match.getFileName().toString();
+                String matchName = directoryPath + match.getFileName().toString();
 
                 if (Files.isDirectory(match)) {
                     matchName += "/";
-                    candidates.add(new Candidate(
-                            matchName, matchName,
-                            null, null, null, null, true));
+                    candidates.add(new Candidate(matchName, matchName,null, null, null, null, true));
                 } else {
-                    candidates.add(new Candidate(
-                            matchName, matchName,
-                            null, null, " ", null, true));
+                    candidates.add(new Candidate(matchName, matchName,null, null, " ", null, true));
                 }
 
                 return;
@@ -107,8 +98,7 @@ public class CommandCompleter implements Completer {
                 for (int i = 0; i < matchingFiles.size(); i++) {
                     Path match = matchingFiles.get(i);
 
-                    String matchName = directoryPath
-                            + match.getFileName().toString();
+                    String matchName = directoryPath + match.getFileName().toString();
 
                     if (Files.isDirectory(match)) {
                         matchName += "/";
@@ -146,17 +136,13 @@ public class CommandCompleter implements Completer {
                 continue;
             }
 
-            try (DirectoryStream<Path> files =
-                    Files.newDirectoryStream(directory)) {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(directory)) {
 
                 for (Path file : files) {
 
                     String fileName = file.getFileName().toString();
 
-                    if (fileName.startsWith(word)
-                            && Files.isRegularFile(file)
-                            && Files.isExecutable(file)
-                            && !matches.contains(fileName)) {
+                    if (fileName.startsWith(word) && Files.isRegularFile(file) && Files.isExecutable(file) && !matches.contains(fileName)) {
 
                         matches.add(fileName);
                     }
@@ -181,8 +167,7 @@ public class CommandCompleter implements Completer {
 
             String match = matches.get(0);
 
-            candidates.add(new Candidate(
-                    match, match, null, null, " ", null, true));
+            candidates.add(new Candidate(match, match, null, null, " ", null, true));
 
             tabCount = 0;
             return;
@@ -192,17 +177,14 @@ public class CommandCompleter implements Completer {
         String commonPrefix = matches.get(0);
 
         for (int i = 1; i < matches.size(); i++) {
-            commonPrefix = findCommonPrefix(
-                    commonPrefix, matches.get(i));
+            
+            commonPrefix = findCommonPrefix(commonPrefix, matches.get(i));
         }
 
         // Extend the typed input when a longer common prefix exists.
         if (commonPrefix.length() > word.length()) {
 
-            candidates.add(new Candidate(
-                    commonPrefix, commonPrefix,
-                    null, null, null, null, true));
-
+            candidates.add(new Candidate(commonPrefix, commonPrefix,null, null, null, null, true));
             tabCount = 0;
             return;
         }
@@ -218,8 +200,7 @@ public class CommandCompleter implements Completer {
         for (int i = 0; i < matches.size(); i++) {
             String match = matches.get(i);
 
-            candidates.add(new Candidate(
-                    match, match, null, null, null, null, true));
+            candidates.add(new Candidate(match, match, null, null, null, null, true));
         }
 
         tabCount = 0;
@@ -235,8 +216,7 @@ public class CommandCompleter implements Completer {
         int length = Math.min(first.length(), second.length());
         int i = 0;
 
-        while (i < length
-                && first.charAt(i) == second.charAt(i)) {
+        while (i < length && first.charAt(i) == second.charAt(i)) {
             i++;
         }
 
