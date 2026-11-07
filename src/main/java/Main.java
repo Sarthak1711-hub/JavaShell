@@ -366,28 +366,38 @@ public class Main {
         }
 
         @Override
-        public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
+        public void complete(LineReader reader, ParsedLine line,
+                List<Candidate> candidates) {
 
             String word = line.word();
 
-            // Complete command arguments: files and directories.
+            // Reset TAB count when the input changes.
+            if (!word.equals(previousWord)) {
+                tabCount = 0;
+                previousWord = word;
+            }
+
+            // File and directory completion.
             if (line.wordIndex() > 0) {
 
-                // Nested path completion, for example: ls pig/do<TAB>
+                // Nested directory completion: ls folder/fi<TAB>
                 if (word.contains("/")) {
 
                     int index = word.lastIndexOf("/");
 
-                    // Keep exactly the path prefix the user already typed.
                     String directoryPath = word.substring(0, index + 1);
                     String prefix = word.substring(index + 1);
 
-                    Path directory = currentDirectory.resolve(directoryPath).normalize();
+                    Path directory = currentDirectory
+                            .resolve(directoryPath)
+                            .normalize();
+
                     List<Path> matchingFiles = new ArrayList<>();
 
                     try (DirectoryStream<Path> files = Files.newDirectoryStream(directory)) {
 
                         for (Path file : files) {
+
                             String fileName = file.getFileName().toString();
 
                             if (fileName.startsWith(prefix)) {
@@ -400,38 +410,80 @@ public class Main {
                         System.out.flush();
                         return;
                     }
-                    // This stage only needs to handle exactly one match.
+
+                    // Exactly one match.
                     if (matchingFiles.size() == 1) {
 
                         Path match = matchingFiles.get(0);
 
-                        // Use the typed prefix, not match.toString(), because
-                        // match.toString() may be an absolute filesystem path.
-                        String matchName = directoryPath + match.getFileName().toString();
+                        String matchName = directoryPath
+                                + match.getFileName().toString();
 
                         if (Files.isDirectory(match)) {
-                            matchName = matchName + "/";
+
+                            matchName += "/";
+
                             candidates.add(new Candidate(
-                                    matchName, matchName, null, null, null, null, true));
+                                    matchName, matchName,
+                                    null, null, null, null, true));
+
                         } else {
+
                             candidates.add(new Candidate(
-                                    matchName, matchName, null, null, " ", null, true));
+                                    matchName, matchName,
+                                    null, null, " ", null, true));
                         }
-                    }
-                    if (matchingFiles.isEmpty()) {
-                        System.out.print("\u0007");
-                        System.out.flush();
+
+                        return;
                     }
 
+                    // Multiple matches.
+                    if (matchingFiles.size() > 1) {
+
+                        tabCount++;
+
+                        // First TAB: ring the bell.
+                        if (tabCount == 1) {
+
+                            System.out.print("\u0007");
+                            System.out.flush();
+                            return;
+                        }
+
+                        // Second and subsequent TABs: display matches.
+                        Collections.sort(matchingFiles);
+
+                        StringBuilder output = new StringBuilder();
+
+                        for (Path match : matchingFiles) {
+
+                            String matchName = directoryPath
+                                    + match.getFileName().toString();
+
+                            if (Files.isDirectory(match)) {
+                                matchName += "/";
+                            }
+
+                            output.append(matchName).append("  ");
+                        }
+
+                        reader.printAbove(output.toString());
+                        return;
+                    }
+
+                    // No matches.
+                    System.out.print("\u0007");
+                    System.out.flush();
                     return;
                 }
 
-                // Current-directory completion, for example: ls pi<TAB>
+                // Current-directory completion: ls fi<TAB>
                 List<Path> matchingFiles = new ArrayList<>();
 
                 try (var files = Files.list(currentDirectory)) {
 
                     for (Path file : files.toList()) {
+
                         String fileName = file.getFileName().toString();
 
                         if (fileName.startsWith(word)) {
@@ -440,47 +492,82 @@ public class Main {
                     }
 
                 } catch (Exception e) {
+
                     System.out.print("\u0007");
                     System.out.flush();
                     return;
                 }
 
+                // Exactly one match.
                 if (matchingFiles.size() == 1) {
 
                     Path match = matchingFiles.get(0);
+
                     String matchName = match.getFileName().toString();
 
                     if (Files.isDirectory(match)) {
-                        matchName = matchName + "/";
+
+                        matchName += "/";
+
                         candidates.add(new Candidate(
-                                matchName, matchName, null, null, null, null, true));
+                                matchName, matchName,
+                                null, null, null, null, true));
+
                     } else {
+
                         candidates.add(new Candidate(
-                                matchName, matchName, null, null, " ", null, true));
+                                matchName, matchName,
+                                null, null, " ", null, true));
                     }
-                }
-                if (matchingFiles.isEmpty()) {
-                    System.out.print("\u0007");
-                    System.out.flush();
+
+                    return;
                 }
 
+                // Multiple matches.
+                if (matchingFiles.size() > 1) {
+
+                    tabCount++;
+
+                    // First TAB: ring the bell.
+                    if (tabCount == 1) {
+
+                        System.out.print("\u0007");
+                        System.out.flush();
+                        return;
+                    }
+
+                    // Second and subsequent TABs: display matches.
+                    Collections.sort(matchingFiles);
+
+                    StringBuilder output = new StringBuilder();
+
+                    for (Path match : matchingFiles) {
+
+                        String matchName = match.getFileName().toString();
+
+                        if (Files.isDirectory(match)) {
+                            matchName += "/";
+                        }
+
+                        output.append(matchName).append("  ");
+                    }
+
+                    reader.printAbove(output.toString());
+                    return;
+                }
+
+                // No matches.
+                System.out.print("\u0007");
+                System.out.flush();
                 return;
             }
 
-            // Reset TAB count when the user changes the command input.
-            if (!word.equals(previousWord))
-
-            {
-                tabCount = 0;
-                previousWord = word;
-            }
-
+            // Command-name completion.
             List<String> matches = new ArrayList<>();
 
             String path = System.getenv("PATH");
             String[] directories = path.split(":");
 
-            // Find executable matches for command-name completion.
             for (String directory : directories) {
 
                 Path dir = Paths.get(directory);
@@ -493,6 +580,7 @@ public class Main {
                     List<Path> files = Files.list(dir).toList();
 
                     for (Path file : files) {
+
                         String fileName = file.getFileName().toString();
 
                         if (fileName.startsWith(word)
@@ -512,8 +600,9 @@ public class Main {
 
             Collections.sort(matches);
 
-            // No matches: ring the bell.
+            // No command matches.
             if (matches.isEmpty()) {
+
                 System.out.print("\u0007");
                 System.out.flush();
                 tabCount = 0;
@@ -522,6 +611,7 @@ public class Main {
 
             // Exactly one command match.
             if (matches.size() == 1) {
+
                 String match = matches.get(0);
 
                 candidates.add(new Candidate(
@@ -535,29 +625,34 @@ public class Main {
             String commonPrefix = matches.get(0);
 
             for (int i = 1; i < matches.size(); i++) {
-                commonPrefix = findCommonPrefix(commonPrefix, matches.get(i));
+                commonPrefix = findCommonPrefix(
+                        commonPrefix, matches.get(i));
             }
 
-            // Extend the input if the common prefix is longer.
+            // Extend input if possible.
             if (commonPrefix.length() > word.length()) {
+
                 candidates.add(new Candidate(
-                        commonPrefix, commonPrefix, null, null, null, null, true));
+                        commonPrefix, commonPrefix,
+                        null, null, null, null, true));
 
                 tabCount = 0;
                 return;
             }
 
-            // If the prefix cannot be extended, first TAB rings the bell.
+            // First TAB: ring the bell.
             tabCount++;
 
             if (tabCount == 1) {
+
                 System.out.print("\u0007");
                 System.out.flush();
                 return;
             }
 
-            // Second TAB displays all matching commands.
+            // Second TAB: display matching commands.
             for (String match : matches) {
+
                 candidates.add(new Candidate(
                         match, match, null, null, null, null, true));
             }
@@ -570,13 +665,13 @@ public class Main {
             int length = Math.min(first.length(), second.length());
             int i = 0;
 
-            while (i < length && first.charAt(i) == second.charAt(i)) {
+            while (i < length
+                    && first.charAt(i) == second.charAt(i)) {
                 i++;
             }
 
             return first.substring(0, i);
         }
-
     }
 
     static List<String> parseCommand(String command) {
