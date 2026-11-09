@@ -1,3 +1,4 @@
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
@@ -5,6 +6,7 @@ import java.nio.file.DirectoryStream;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+
 import org.jline.reader.Completer;
 import org.jline.reader.LineReader;
 import org.jline.reader.ParsedLine;
@@ -25,7 +27,8 @@ public class CommandCompleter implements Completer {
     }
 
     @Override
-    public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
+    public void complete(LineReader reader, ParsedLine line,
+                         List<Candidate> candidates) {
 
         String word = line.word();
 
@@ -34,162 +37,210 @@ public class CommandCompleter implements Completer {
             previousWord = word;
         }
 
-        // File and directory completion.
-        if (line.wordIndex() > 0) {
+        // Command-name completion
+        if (line.wordIndex() == 0) {
 
-            String directoryPath = "";
-            String prefix = word;
+            List<String> matches = new ArrayList<>();
 
-            // Check whether the user typed a directory path.
-            if (word.contains("/")) {
-                int index = word.lastIndexOf("/");
-                directoryPath = word.substring(0, index + 1);
-                prefix = word.substring(index + 1);
+            List<String> builtins = List.of("echo", "exit");
+
+            for (String builtin : builtins) {
+                if (builtin.startsWith(word)) {
+                    matches.add(builtin);
+                }
             }
 
-            Path directory = currentDirectory.resolve(directoryPath).normalize();
-            List<Path> matchingFiles = new ArrayList<>();
+            String path = System.getenv("PATH");
 
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(directory)) {
+            if (path != null && !path.isEmpty()) {
 
-                for (Path file : files) {
-                    String fileName = file.getFileName().toString();
+                String[] directories = path.split(":");
 
-                    if (fileName.startsWith(prefix)) {
-                        matchingFiles.add(file);
+                for (String directoryPath : directories) {
+
+                    Path directory = Paths.get(directoryPath);
+
+                    if (!Files.exists(directory)
+                            || !Files.isDirectory(directory)) {
+                        continue;
+                    }
+
+                    try (DirectoryStream<Path> files =
+                                 Files.newDirectoryStream(directory)) {
+
+                        for (Path file : files) {
+
+                            String fileName =
+                                    file.getFileName().toString();
+
+                            if (fileName.startsWith(word)
+                                    && Files.isRegularFile(file)
+                                    && Files.isExecutable(file)
+                                    && !matches.contains(fileName)) {
+
+                                matches.add(fileName);
+                            }
+                        }
+
+                    } catch (Exception e) {
+                        // Ignore unreadable directories
                     }
                 }
+            }
 
-            } catch (Exception e) {
+            Collections.sort(matches);
+
+            if (matches.isEmpty()) {
+                tabCount = 0;
                 ringBell();
                 return;
             }
 
-            Collections.sort(matchingFiles);
+            if (matches.size() == 1) {
 
-            // Exactly one match.
-            if (matchingFiles.size() == 1) {
+                String match = matches.get(0);
 
-                Path match = matchingFiles.get(0);
-                String matchName = directoryPath + match.getFileName().toString();
+                candidates.add(new Candidate(
+                        match, match, null, null, " ", null, true
+                ));
 
-                if (Files.isDirectory(match)) {
-                    matchName += "/";
-                    candidates.add(new Candidate(matchName, matchName,null, null, null, null, true));
-                } else {
-                    candidates.add(new Candidate(matchName, matchName,null, null, " ", null, true));
-                }
-
+                tabCount = 0;
                 return;
             }
 
-            // Multiple matches.
-            if (matchingFiles.size() > 1) {
+            String commonPrefix = matches.get(0);
 
-                tabCount++;
+            for (int i = 1; i < matches.size(); i++) {
+                commonPrefix = findCommonPrefix(
+                        commonPrefix, matches.get(i)
+                );
+            }
 
-                if (tabCount == 1) {
-                    ringBell();
-                    return;
-                }
+            if (commonPrefix.length() > word.length()) {
 
-                StringBuilder output = new StringBuilder();
+                candidates.add(new Candidate(
+                        commonPrefix, commonPrefix,
+                        null, null, null, null, true
+                ));
 
-                for (int i = 0; i < matchingFiles.size(); i++) {
-                    Path match = matchingFiles.get(i);
-
-                    String matchName = directoryPath + match.getFileName().toString();
-
-                    if (Files.isDirectory(match)) {
-                        matchName += "/";
-                    }
-
-                    output.append(matchName).append("  ");
-                }
-
-                reader.printAbove(output.toString());
+                tabCount = 0;
                 return;
             }
 
-            // No matches.
-            ringBell();
-            return;
-        }
+            tabCount++;
 
-        // Command-name completion.
-        List<String> matches = new ArrayList<>();
-
-        String path = System.getenv("PATH");
-
-        if (path == null || path.isEmpty()) {
-            ringBell();
-            return;
-        }
-
-        String[] directories = path.split(":");
-
-        for (int i = 0; i < directories.length; i++) {
-
-            Path directory = Paths.get(directories[i]);
-
-            if (!Files.exists(directory) || !Files.isDirectory(directory)) {
-                continue;
+            if (tabCount == 1) {
+                ringBell();
+                return;
             }
 
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(directory)) {
+            StringBuilder output = new StringBuilder();
 
-                for (Path file : files) {
+            for (String match : matches) {
+                output.append(match).append("  ");
+            }
 
-                    String fileName = file.getFileName().toString();
+            reader.printAbove(output.toString());
+            tabCount = 0;
+            return;
+        }
 
-                    if (fileName.startsWith(word) && Files.isRegularFile(file) && Files.isExecutable(file) && !matches.contains(fileName)) {
+        // File and directory completion for every argument
+        String directoryPath = "";
+        String prefix = word;
 
-                        matches.add(fileName);
-                    }
+        if (word.contains("/")) {
+            int index = word.lastIndexOf("/");
+            directoryPath = word.substring(0, index + 1);
+            prefix = word.substring(index + 1);
+        }
+
+        Path directory =
+                currentDirectory.resolve(directoryPath).normalize();
+
+        List<Path> matchingFiles = new ArrayList<>();
+
+        try (DirectoryStream<Path> files =
+                     Files.newDirectoryStream(directory)) {
+
+            for (Path file : files) {
+
+                String fileName = file.getFileName().toString();
+
+                if (fileName.startsWith(prefix)) {
+                    matchingFiles.add(file);
                 }
-
-            } catch (Exception e) {
-                // Ignore directories that cannot be read.
             }
-        }
 
-        Collections.sort(matches);
-
-        // No command matches.
-        if (matches.isEmpty()) {
+        } catch (Exception e) {
+            tabCount = 0;
             ringBell();
+            return;
+        }
+
+        Collections.sort(matchingFiles);
+
+        // No matches
+        if (matchingFiles.isEmpty()) {
+            tabCount = 0;
+            ringBell();
+            return;
+        }
+
+        // Exactly one match
+        if (matchingFiles.size() == 1) {
+
+            Path match = matchingFiles.get(0);
+
+            String matchName =
+                    directoryPath + match.getFileName().toString();
+
+            if (Files.isDirectory(match)) {
+                matchName += "/";
+
+                candidates.add(new Candidate(
+                        matchName, matchName,
+                        null, null, null, null, true
+                ));
+
+            } else {
+
+                candidates.add(new Candidate(
+                        matchName, matchName,
+                        null, null, " ", null, true
+                ));
+            }
+
             tabCount = 0;
             return;
         }
 
-        // Exactly one command match.
-        if (matches.size() == 1) {
+        // Multiple matches: longest common prefix
+        String commonPrefix =
+                matchingFiles.get(0).getFileName().toString();
 
-            String match = matches.get(0);
+        for (int i = 1; i < matchingFiles.size(); i++) {
 
-            candidates.add(new Candidate(match, match, null, null, " ", null, true));
+            commonPrefix = findCommonPrefix(
+                    commonPrefix,
+                    matchingFiles.get(i).getFileName().toString()
+            );
+        }
+
+        if (commonPrefix.length() > prefix.length()) {
+
+            String completion = directoryPath + commonPrefix;
+
+            candidates.add(new Candidate(
+                    completion, completion,
+                    null, null, null, null, true
+            ));
 
             tabCount = 0;
             return;
         }
 
-        // Find the longest common prefix.
-        String commonPrefix = matches.get(0);
-
-        for (int i = 1; i < matches.size(); i++) {
-            
-            commonPrefix = findCommonPrefix(commonPrefix, matches.get(i));
-        }
-
-        // Extend the typed input when a longer common prefix exists.
-        if (commonPrefix.length() > word.length()) {
-
-            candidates.add(new Candidate(commonPrefix, commonPrefix,null, null, null, null, true));
-            tabCount = 0;
-            return;
-        }
-
-        // First TAB rings the bell; second TAB lists matches.
+        // First TAB: bell
         tabCount++;
 
         if (tabCount == 1) {
@@ -197,12 +248,22 @@ public class CommandCompleter implements Completer {
             return;
         }
 
-        for (int i = 0; i < matches.size(); i++) {
-            String match = matches.get(i);
+        // Subsequent TAB: list matches
+        StringBuilder output = new StringBuilder();
 
-            candidates.add(new Candidate(match, match, null, null, null, null, true));
+        for (Path match : matchingFiles) {
+
+            String matchName =
+                    directoryPath + match.getFileName().toString();
+
+            if (Files.isDirectory(match)) {
+                matchName += "/";
+            }
+
+            output.append(matchName).append("  ");
         }
 
+        reader.printAbove(output.toString());
         tabCount = 0;
     }
 
@@ -216,7 +277,8 @@ public class CommandCompleter implements Completer {
         int length = Math.min(first.length(), second.length());
         int i = 0;
 
-        while (i < length && first.charAt(i) == second.charAt(i)) {
+        while (i < length
+                && first.charAt(i) == second.charAt(i)) {
             i++;
         }
 
