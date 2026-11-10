@@ -1,18 +1,20 @@
-import java.nio.file.Path; 
-import java.nio.file.Paths; 
-import java.util.List; 
-import org.jline.reader.LineReader; 
-import org.jline.reader.LineReaderBuilder; 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+
 public class Shell {
 
     public void run() throws Exception {
 
-
         Path currentDirectory = Paths.get(System.getProperty("user.dir"));
-        
-        CommandCompleter completer = new CommandCompleter(currentDirectory); //Provide command completion when the TAB key is pressed.
 
-        LineReader reader = LineReaderBuilder.builder().completer(completer).option(LineReader.Option.AUTO_LIST, false).build();
+        CommandCompleter completer = new CommandCompleter(currentDirectory); // Provide command completion when the TAB
+                                                                             // key is pressed.
+
+        LineReader reader = LineReaderBuilder.builder().completer(completer).option(LineReader.Option.AUTO_LIST, false)
+                .build();
 
         while (true) {
 
@@ -50,7 +52,17 @@ public class Shell {
 
                 currentDirectory = BuiltinCommands.cd(parts, currentDirectory, completer);
 
-            } else {
+            } else if (commandName.equals("complete")) {
+
+                if (parts.get(1).equals("-p")) {
+
+                    String argument = parts.get(2);
+
+                    System.out.println("complete: " + argument + ": no completion specification");
+                }
+            }
+
+            else {
 
                 ExternalCommandExecutor.execute(parts);
             }
