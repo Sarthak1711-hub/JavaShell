@@ -12,9 +12,9 @@ public class BuiltinCommands {
     // ECHO COMMAND
     public static void echo(List<String> parts) throws Exception {
 
-        int endIndex;
-        String outputFile = null;
-        String errorOutputFile = null;
+        int endIndex;  //It stores the index where the echo output should stop.
+        String outputFile = null; //Stores the filename where normal output should be written.
+        String errorOutputFile = null; //Same concept, but this variable stores the filename for error output.
         int redirectIndex = parts.indexOf(">");
         int errorRedirectIndex = parts.indexOf("2>");
         int appendRedirectIndex = parts.indexOf(">>");
@@ -148,7 +148,7 @@ public class BuiltinCommands {
     // TYPE COMMAND
     public static void type(String argument) {
 
-        if (argument.equals("exit")|| argument.equals("echo")|| argument.equals("type")|| argument.equals("pwd")|| argument.equals("cd")) {
+        if (argument.equals("exit")|| argument.equals("echo")|| argument.equals("type")|| argument.equals("pwd")|| argument.equals("cd") || argument.equals("complete")) {
 
             System.out.println(argument + " is a shell builtin");
 

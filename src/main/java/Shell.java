@@ -1,16 +1,16 @@
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-
+import java.nio.file.Path; 
+import java.nio.file.Paths; 
+import java.util.List; 
+import org.jline.reader.LineReader; 
+import org.jline.reader.LineReaderBuilder; 
 public class Shell {
 
     public void run() throws Exception {
 
-        Path currentDirectory = Paths.get(System.getProperty("user.dir"));
 
-        CommandCompleter completer = new CommandCompleter(currentDirectory);
+        Path currentDirectory = Paths.get(System.getProperty("user.dir"));
+        
+        CommandCompleter completer = new CommandCompleter(currentDirectory); //Provide command completion when the TAB key is pressed.
 
         LineReader reader = LineReaderBuilder.builder().completer(completer).option(LineReader.Option.AUTO_LIST, false).build();
 
@@ -48,7 +48,7 @@ public class Shell {
 
             } else if (commandName.equals("cd")) {
 
-                currentDirectory = BuiltinCommands.cd(parts,currentDirectory,completer);
+                currentDirectory = BuiltinCommands.cd(parts, currentDirectory, completer);
 
             } else {
 
