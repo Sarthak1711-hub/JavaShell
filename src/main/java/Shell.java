@@ -3,6 +3,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
+import java.util.HashMap;
 
 public class Shell {
 
@@ -15,6 +16,8 @@ public class Shell {
 
         LineReader reader = LineReaderBuilder.builder().completer(completer).option(LineReader.Option.AUTO_LIST, false)
                 .build();
+
+        HashMap<String, String> completions = new HashMap<>();
 
         while (true) {
 
@@ -54,15 +57,41 @@ public class Shell {
 
             } else if (commandName.equals("complete")) {
 
-                if (parts.get(1).equals("-p")) {
+                if (parts.size() < 2) {
+                    continue;
+                }
+
+                if (parts.get(1).equals("-C")) {
+
+                    if (parts.size() < 4) {
+                        continue;
+                    }
+
+                    String scriptPath = parts.get(2);
+                    String targetCommand = parts.get(3);
+
+                    completions.put(targetCommand, scriptPath);
+
+                } else if (parts.get(1).equals("-p")) {
+
+                    if (parts.size() < 3) {
+                        continue;
+                    }
 
                     String argument = parts.get(2);
 
-                    System.out.println("complete: " + argument + ": no completion specification");
-                }
-            }
+                    if (completions.containsKey(argument)) {
 
-            else {
+                        String scriptPath = completions.get(argument);
+
+                        System.out.println("complete -C '" + scriptPath + "' " + argument);
+
+                    } else {
+
+                        System.out.println("complete: " + argument + ": no completion specification");
+                    }
+                }
+            } else {
 
                 ExternalCommandExecutor.execute(parts);
             }
