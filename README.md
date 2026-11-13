@@ -8,7 +8,7 @@
 
 > A Unix-like shell built from scratch in Java — engineered for command parsing, process management, and executable discovery across the system PATH.
 
-Built with **Java 11+ · Maven · Java NIO**
+Built with **Java 11+ · Maven · Java NIO**  
 
 ---
 
