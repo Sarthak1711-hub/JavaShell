@@ -11,13 +11,13 @@ public class Shell {
 
         Path currentDirectory = Paths.get(System.getProperty("user.dir"));
 
-        CommandCompleter completer = new CommandCompleter(currentDirectory); // Provide command completion when the TAB
+        HashMap<String, String> completions = new HashMap<>();
+        CommandCompleter completer = new CommandCompleter(currentDirectory,completions); // Provide command completion when the TAB
                                                                              // key is pressed.
 
         LineReader reader = LineReaderBuilder.builder().completer(completer).option(LineReader.Option.AUTO_LIST, false)
                 .build();
 
-        HashMap<String, String> completions = new HashMap<>();
 
         while (true) {
 
